@@ -273,4 +273,7 @@ Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/**
 
 bin/
 bin-int/
+
 imgui.ini
+*.vcxproj
+*.vcxproj.filters
