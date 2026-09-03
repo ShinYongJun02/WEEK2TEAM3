@@ -75,6 +75,7 @@
 !*.ts
 !*.tsx
 !*.command
+!*.lua
 
 # Other configuration and markup files
 !*.ini
