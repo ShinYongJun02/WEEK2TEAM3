@@ -273,4 +273,4 @@ Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/**
 
 # WEEK2TEAM3
 imgui.ini
-*.vcproj
+*.vcxproj
