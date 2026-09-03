@@ -273,4 +273,5 @@ Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/**
 
 # WEEK2TEAM3
 imgui.ini
-*.vcxproj
+WEEK2TEAM3\WEEK2TEAM3.vcxproj
+WEEK2TEAM3\WEEK2TEAM3.vcxproj.filters
