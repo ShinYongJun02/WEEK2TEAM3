@@ -271,7 +271,9 @@ Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/**
 /Engine/Source/ThirdParty/Facebook/IOS/**/*.yml
 /Engine/Source/ThirdParty/Facebook/IOS/**/*.json
 
-# WEEK2TEAM3
+bin/
+bin-int/
+
 imgui.ini
 *.vcxproj
 *.vcxproj.filters
