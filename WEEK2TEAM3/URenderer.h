@@ -6,10 +6,9 @@ class URenderer
 {
 	struct FConstants
 	{
-		FVector Offset;
-		float Pad1;		// 16 byte pad
-		FVector Scale;	// (width, height, depth)
-		float Pad2;
+		FMatrix model;
+		FMatrix view;
+		FMatrix projection;
 	};
 
 public:
@@ -21,6 +20,9 @@ public:
 	// CreateFrameBuffer
 	ID3D11Texture2D* FrameBuffer = nullptr;
 	ID3D11RenderTargetView* FrameBufferRTV = nullptr;
+
+	ID3D11Texture2D* DeptStencilBuffer = nullptr;
+	ID3D11DepthStencilView* DSV = nullptr;
 
 	// CreateRasterizerState
 	ID3D11RasterizerState* RasterizerState = nullptr;
@@ -34,6 +36,7 @@ public:
 	ID3D11Buffer* ConstantBuffer = nullptr;
 
 	// values
+	UINT Width, Height;
 	D3D11_VIEWPORT ViewportInfo;
 	FLOAT ClearColor[4] = { 0.025f, 0.025f, 0.025f, 1.0f };
 	unsigned int Stride;
@@ -43,6 +46,7 @@ public:
 	{
 		CreateDeviceAndSwapChain(hWindow);
 		CreateFrameBuffer();
+		CreateDepthStencilBuffer();
 		CreateRasterizerState();
 	}
 
@@ -50,6 +54,8 @@ public:
 	{
 		ReleaseRasterizerState();
 		DeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
+		DSV->Release();
+		DeptStencilBuffer->Release();
 		ReleaseFrameBuffer();
 		ReleaseDeviceAndSwapChain();
 	}
@@ -75,9 +81,9 @@ public:
 			&swapchaindesc, &SwapChain, &Device, nullptr, &DeviceContext);
 
 		SwapChain->GetDesc(&swapchaindesc);
-		ViewportInfo = { 0.0f, 0.0f,
-			(float)swapchaindesc.BufferDesc.Width, (float)swapchaindesc.BufferDesc.Height,
-			0.0f, 1.0f };
+		Width = swapchaindesc.BufferDesc.Width;
+		Height = swapchaindesc.BufferDesc.Height;
+		ViewportInfo = { 0.0f, 0.0f, (float)Width, (float)Height, 0.0f, 1.0f };
 	}
 
 	void ReleaseDeviceAndSwapChain()
@@ -132,11 +138,31 @@ public:
 		}
 	}
 
+	void CreateDepthStencilBuffer() 
+	{
+		D3D11_TEXTURE2D_DESC depthTextureDesc = {};
+		depthTextureDesc.Width = Width;
+		depthTextureDesc.Height = Height;
+		depthTextureDesc.MipLevels = 1;
+		depthTextureDesc.ArraySize = 1;
+		depthTextureDesc.SampleDesc.Count = 1;
+		depthTextureDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+		depthTextureDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+
+		Device->CreateTexture2D(&depthTextureDesc, nullptr, &DeptStencilBuffer);
+
+		D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+		dsvDesc.Format = depthTextureDesc.Format;
+		dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS;
+
+		Device->CreateDepthStencilView(DeptStencilBuffer, &dsvDesc, &DSV);
+	}
+
 	void CreateRasterizerState()
 	{
 		D3D11_RASTERIZER_DESC rasterizerdesc = {};
 		rasterizerdesc.FillMode = D3D11_FILL_SOLID;
-		rasterizerdesc.CullMode = D3D11_CULL_BACK;
+		rasterizerdesc.CullMode = D3D11_CULL_NONE;
 
 		Device->CreateRasterizerState(&rasterizerdesc, &RasterizerState);
 	}
@@ -173,8 +199,8 @@ public:
 
 		D3D11_INPUT_ELEMENT_DESC layout[] =
 		{
-			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-			{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(FVertex, position), D3D11_INPUT_PER_VERTEX_DATA, 0},
+			{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(FVertex, color), D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		};
 
 		Device->CreateInputLayout(
@@ -228,37 +254,82 @@ public:
 		}
 	}
 
-	ID3D11Buffer* CreateVertexBuffer(FVertexSimple* vertices, UINT byteWidth)
+	void Resize(UINT width, UINT height)
+	{
+		DeviceContext->OMSetRenderTargets(0, 0, 0);
+
+		FrameBuffer->Release();
+		FrameBufferRTV->Release();
+		DeptStencilBuffer->Release();
+		DSV->Release();
+
+		SwapChain->ResizeBuffers(0, 0, 0, DXGI_FORMAT_UNKNOWN, 0);
+
+		Width = width;
+		Height = height;
+		ViewportInfo = { 0.0f, 0.0f, (float)width, (float)height, 0.0f, 1.0f };
+
+		CreateFrameBuffer();
+		CreateDepthStencilBuffer();
+	}
+
+	template <typename T>
+	FVertexBuffer CreateVertexBuffer(T* vertices, UINT count)
 	{
 		D3D11_BUFFER_DESC vertexbufferdesc = {};
-		vertexbufferdesc.ByteWidth = byteWidth;
+		vertexbufferdesc.ByteWidth = sizeof(T) * count;
 		vertexbufferdesc.Usage = D3D11_USAGE_IMMUTABLE;
 		vertexbufferdesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 
 		D3D11_SUBRESOURCE_DATA vertexbufferSRD = { vertices };
 
 		ID3D11Buffer* vertexBuffer;
-
 		Device->CreateBuffer(&vertexbufferdesc, &vertexbufferSRD, &vertexBuffer);
 
-		return vertexBuffer;
+		return FVertexBuffer{ vertexBuffer, sizeof(T) };
 	}
 
-	void ReleaseVertexBuffer(ID3D11Buffer* vertexBuffer)
+	void ReleaseVertexBuffer(FVertexBuffer& vb)
 	{
-		vertexBuffer->Release();
+		if (vb.buffer)
+		{
+			vb.buffer->Release();
+			vb.buffer = nullptr;
+			vb.stride = 0;
+		}
+	}
+
+	ID3D11Buffer* CreateIndexBuffer(UINT* indices, UINT count)
+	{
+		D3D11_BUFFER_DESC indexbufferdesc = {};
+		indexbufferdesc.ByteWidth = sizeof(UINT) * count;
+		indexbufferdesc.Usage = D3D11_USAGE_IMMUTABLE;
+		indexbufferdesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+
+		D3D11_SUBRESOURCE_DATA indexbufferSRD = { indices };
+
+		ID3D11Buffer* indexBuffer;
+		Device->CreateBuffer(&indexbufferdesc, &indexbufferSRD, &indexBuffer);
+		
+		return indexBuffer;
+	}
+
+	void ReleaseIndexBuffer(ID3D11Buffer* indexBuffer)
+	{
+		indexBuffer->Release();
 	}
 
 	void Prepare()
 	{
 		DeviceContext->ClearRenderTargetView(FrameBufferRTV, ClearColor);
+		DeviceContext->ClearDepthStencilView(DSV, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
 		DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 		DeviceContext->RSSetViewports(1, &ViewportInfo);
 		DeviceContext->RSSetState(RasterizerState);
 
-		DeviceContext->OMSetRenderTargets(1, &FrameBufferRTV, nullptr);
+		DeviceContext->OMSetRenderTargets(1, &FrameBufferRTV, DSV);
 		DeviceContext->OMSetBlendState(nullptr, nullptr, 0xffffffff);
 	}
 
@@ -275,7 +346,7 @@ public:
 		DeviceContext->PSSetShader(SimplePixelShader, nullptr, 0);
 	}
 
-	void UpdateConstant(FVector Offset, FVector Scale)
+	void UpdateConstant(const FMatrix& model, const FMatrix& view, const FMatrix& projection)
 	{
 		if (ConstantBuffer)
 		{
@@ -284,8 +355,9 @@ public:
 			DeviceContext->Map(ConstantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &constantbufferMSR);
 			FConstants* constants = (FConstants*)constantbufferMSR.pData;
 			{
-				constants->Offset = Offset;
-				constants->Scale = Scale;
+				constants->model = model;
+				constants->view = view;
+				constants->projection = projection;
 			}
 			DeviceContext->Unmap(ConstantBuffer, 0);
 		}
@@ -298,8 +370,33 @@ public:
 		DeviceContext->Draw(numVertices, 0);
 	}
 
+	void Draw(const FVertexBuffer& vb, UINT vertexCount)
+	{
+		UINT offset = 0;
+		DeviceContext->IASetVertexBuffers(0, 1, &vb.buffer, &vb.stride, &offset);
+		DeviceContext->Draw(vertexCount, 0);
+	}
+
+	void DrawIndexed(const FVertexBuffer& vb, ID3D11Buffer* ib, UINT indicesCount)
+	{
+		UINT offset = 0;
+		DeviceContext->IASetVertexBuffers(0, 1, &vb.buffer, &vb.stride, &offset);
+		DeviceContext->IASetIndexBuffer(ib, DXGI_FORMAT_R32_UINT, 0);
+		DeviceContext->DrawIndexed(indicesCount, 0, 0);
+	}
+
 	void SwapBuffer()
 	{
 		SwapChain->Present(1, 0);
+	}
+
+	inline UINT GetWidth() 
+	{
+		return Width;
+	}
+
+	inline UINT GetHeight()
+	{
+		return Height;
 	}
 };
