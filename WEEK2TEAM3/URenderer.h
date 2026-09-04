@@ -163,7 +163,7 @@ public:
 	{
 		D3D11_RASTERIZER_DESC rasterizerdesc = {};
 		rasterizerdesc.FillMode = D3D11_FILL_SOLID;
-		rasterizerdesc.CullMode = D3D11_CULL_NONE;
+		rasterizerdesc.CullMode = D3D11_CULL_BACK;
 
 		Device->CreateRasterizerState(&rasterizerdesc, &RasterizerState);
 	}
@@ -263,6 +263,11 @@ public:
 
 	void Resize(UINT width, UINT height)
 	{
+		if (width == 0 || height == 0)
+		{
+			return;
+		}
+
 		DeviceContext->OMSetRenderTargets(0, 0, 0);
 
 		FrameBuffer->Release();

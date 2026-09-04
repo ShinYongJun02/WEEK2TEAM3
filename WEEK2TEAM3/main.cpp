@@ -229,7 +229,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		pt = temp;
 
 		// 카메라 무빙 (카메라 z축 회전 = 오른쪽 보기, 카메라 y축 회전 = 아래 보기
-		camera.RelativeLocation += FVector(pressed[0] - pressed[1], pressed[2] - pressed[3], pressed[4] - pressed[5]) * ((float)elapsedTime / 1000.0f);
+		camera.RelativeLocation += (
+			camera.GetForward() * (pressed[0] - pressed[1]) +
+			camera.GetRight() * (pressed[2] - pressed[3]) +
+			camera.GetUp() * (pressed[4] - pressed[5])) * ((float)elapsedTime / 1000.0f);
 		if (pressed[6])
 		{
 			camera.RelativeRotation += FVector(0.0f, distY, distX) * ((float)elapsedTime / 1000.0f) * cameraSpeed;
