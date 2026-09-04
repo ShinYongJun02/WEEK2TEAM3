@@ -7,6 +7,8 @@ class UObject
 	public:
 	uint32 UUID;
 	uint32 InternalIndex;
+public:
+	virtual ~UObject() {};
 };
 
 extern TArray<UObject*> GUObjectArray;
