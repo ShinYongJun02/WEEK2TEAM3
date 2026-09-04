@@ -251,6 +251,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
 
+		// ImGuizmo
+		ImGuizmo::BeginFrame();
+		ImGuizmo::SetOrthographic(false);
+		ImGuizmo::SetRect(0.0f, 0.0f,
+			renderer.ViewportInfo.Width,
+			renderer.ViewportInfo.Height);
+
 		// ImGui
 		ImGui::Begin("Debug Cube");
 		ImGui::DragFloat3("Translation", &cube.RelativeLocation.x, 0.1f);
