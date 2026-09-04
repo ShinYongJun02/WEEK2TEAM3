@@ -6,7 +6,6 @@ cbuffer modelConstants : register(b0) // FConstants
 cbuffer viewConstants : register(b1) // FConstants
 {
 	row_major matrix View;
-	row_major matrix Projection;
 }
 
 struct VS_INPUT
@@ -26,7 +25,7 @@ PS_INPUT mainVS(VS_INPUT input)
 {
 	PS_INPUT output;
     
-	output.position = mul(mul(mul(input.position, Model), View), Projection);
+	output.position = mul(mul(input.position, Model), View);
 	output.color = input.color;
     
 	return output;

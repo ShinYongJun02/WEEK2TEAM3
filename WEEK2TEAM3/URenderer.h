@@ -6,15 +6,9 @@
 
 class URenderer
 {
-	struct FPrimitiveConstants
+	struct FConstants
 	{
 		FMatrix Matrix;
-	};
-
-	struct FViewConstants
-	{
-		FMatrix View;
-		FMatrix Projection;
 	};
 
 public:
@@ -145,7 +139,7 @@ public:
 		}
 	}
 
-	void CreateDepthStencilBuffer() 
+	void CreateDepthStencilBuffer()
 	{
 		D3D11_TEXTURE2D_DESC depthTextureDesc = {};
 		depthTextureDesc.Width = Width;
@@ -244,19 +238,13 @@ public:
 	void CreateConstantBuffer()
 	{
 		D3D11_BUFFER_DESC constantbufferdesc = {};
-		constantbufferdesc.ByteWidth = sizeof(FPrimitiveConstants) + 0xf & 0xfffffff0;
+		constantbufferdesc.ByteWidth = sizeof(FConstants) + 0xf & 0xfffffff0;
 		constantbufferdesc.Usage = D3D11_USAGE_DYNAMIC;
 		constantbufferdesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 		constantbufferdesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 
 		Device->CreateBuffer(&constantbufferdesc, nullptr, &ModelConstantBuffer);
-
-		D3D11_BUFFER_DESC viewconstantbufferdesc = {};
-		viewconstantbufferdesc.ByteWidth = sizeof(FViewConstants) + 0xf & 0xfffffff0;
-		viewconstantbufferdesc.Usage = D3D11_USAGE_DYNAMIC;
-		viewconstantbufferdesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		viewconstantbufferdesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		Device->CreateBuffer(&viewconstantbufferdesc, nullptr, &ViewConstantBuffer);
+		Device->CreateBuffer(&constantbufferdesc, nullptr, &ViewConstantBuffer);
 	}
 
 	void ReleaseConstantBuffer()
@@ -324,7 +312,7 @@ public:
 
 		ID3D11Buffer* indexBuffer;
 		Device->CreateBuffer(&indexbufferdesc, &indexbufferSRD, &indexBuffer);
-		
+
 		return indexBuffer;
 	}
 
@@ -371,7 +359,7 @@ public:
 			D3D11_MAPPED_SUBRESOURCE constantbufferMSR;
 
 			DeviceContext->Map(ModelConstantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &constantbufferMSR);
-			FPrimitiveConstants* constants = (FPrimitiveConstants*)constantbufferMSR.pData;
+			FConstants* constants = (FConstants*)constantbufferMSR.pData;
 			{
 				constants->Matrix = model;
 			}
@@ -379,17 +367,16 @@ public:
 		}
 	}
 
-	void UpdateViewConstant(FMatrix view, FMatrix projection)
+	void UpdateViewConstant(FMatrix view)
 	{
 		if (ViewConstantBuffer)
 		{
 			D3D11_MAPPED_SUBRESOURCE constantbufferMSR;
 
 			DeviceContext->Map(ViewConstantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &constantbufferMSR);
-			FViewConstants* constants = (FViewConstants*)constantbufferMSR.pData;
+			FConstants* constants = (FConstants*)constantbufferMSR.pData;
 			{
-				constants->View = view;
-				constants->Projection = projection;
+				constants->Matrix = view;
 			}
 			DeviceContext->Unmap(ViewConstantBuffer, 0);
 		}
@@ -407,7 +394,7 @@ public:
 		SwapChain->Present(1, 0);
 	}
 
-	inline UINT GetWidth() 
+	inline UINT GetWidth()
 	{
 		return Width;
 	}
