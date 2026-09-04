@@ -1,19 +1,16 @@
-#pragma once
+#include "FVertex.h"
 
-struct FVertexSimple
-{
-	float x, y, z;    // Position
-	float r, g, b, a; // Color
-};
-
-FVertexSimple triangle_vertices[] =
+FVertex TriangleVertices[] =
 {
 	{  0.0f,  1.0f, 0.0f,  1.0f, 0.0f, 0.0f, 1.0f }, // Top vertex (red)
 	{  1.0f, -1.0f, 0.0f,  0.0f, 1.0f, 0.0f, 1.0f }, // Bottom-right vertex (green)
 	{ -1.0f, -1.0f, 0.0f,  0.0f, 0.0f, 1.0f, 1.0f }  // Bottom-left vertex (blue)
 };
 
-FVertexSimple cube_vertices[] =
+int32 TriangleVerticesSize = static_cast<int32>(sizeof(TriangleVertices) / sizeof(FVertex));
+
+
+FVertex CubeVertices[] =
 {
 	// Front face (Z+)
 	{ -0.5f, -0.5f,  0.5f,  1.0f, 0.0f, 0.0f, 1.0f }, // Bottom-left (red)
@@ -64,7 +61,9 @@ FVertexSimple cube_vertices[] =
 	{  0.5f, -0.5f,  0.5f,  0.0f, 1.0f, 0.0f, 1.0f }, // Top-right (green)
 };
 
-FVertexSimple sphere_vertices[] = {
+int32 CubeVerticesSize = static_cast<int32>(sizeof(CubeVertices) / sizeof(FVertex));
+
+FVertex SphereVertices[] = {
 	{ 0.000000f, 0.500000f, 0.000000f, 0.500000f, 1.000000f, 0.500000f, 1.000000f },
 	{ 0.078217f, 0.493844f, 0.000000f, 0.578217f, 0.993844f, 0.500000f, 1.000000f },
 	{ 0.074389f, 0.493844f, 0.024171f, 0.574389f, 0.993844f, 0.524170f, 1.000000f },
@@ -2466,3 +2465,5 @@ FVertexSimple sphere_vertices[] = {
 	{ -0.000000f, -0.500000f, -0.000000f, 0.500000f, 0.000000f, 0.500000f, 1.000000f },
 	{ 0.078217f, -0.493844f, 0.000000f, 0.578217f, 0.006156f, 0.500000f, 1.000000f },
 };
+
+int32 SphereVerticesSize = static_cast<int32>(sizeof(SphereVertices) / sizeof(FVertex));

@@ -1,8 +1,11 @@
 #include "Core.h"
-#include "Sphere.h"
+#include "FVertex.h"
 #include "URenderer.h"
 #include "UCamera.h"
 #include "USceneComponent.h"
+
+
+#include "UCubeComp.h"
 
 // 화면 경계
 const float leftBorder = -1.0f;
@@ -120,11 +123,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	double elapsedTime = 0.0;
 
 	// 리소스 생성
-	UINT numVerticesCube = sizeof(cube_vertices) / sizeof(FVertexSimple);
-	ID3D11Buffer* vertexBufferCube = renderer.CreateVertexBuffer(cube_vertices, sizeof(cube_vertices));
+	//UINT numVerticesCube = sizeof(cube_vertices) / sizeof(FVertex);
+	//ID3D11Buffer* vertexBufferCube = renderer.CreateVertexBuffer(CubeVertices, CubeVerticesSize);
 
 	// 큐브
-	USceneComponent cube;
+	// USceneComponent cube;
+	UCubeComp* cube = NewObject<UCubeComp>();
+	cube->setVertexBuffer(renderer);
 
 	// 카메라
 	UCamera camera;
@@ -243,9 +248,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		renderer.Prepare();
 		renderer.PrepareShader();
 
-		renderer.UpdateModelConstant(cube.GetModelMatrix());
+		//renderer.UpdateModelConstant(cube.GetModelMatrix());
 		renderer.UpdateViewConstant(camera.GetViewMatrix() * camera.GetProjectionMatrix(renderer.ViewportInfo.Width / renderer.ViewportInfo.Height));
-		renderer.RenderPrimitive(vertexBufferCube, numVerticesCube);
+		cube->Render(renderer);
+		
+		//renderer.RenderPrimitive(vertexBufferCube, numVerticesCube);
 
 		ImGui_ImplDX11_NewFrame();
 		ImGui_ImplWin32_NewFrame();
@@ -253,9 +260,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 		// ImGui
 		ImGui::Begin("Debug Cube");
-		ImGui::DragFloat3("Translation", &cube.RelativeLocation.x, 0.1f);
-		ImGui::DragFloat3("Rotation", &cube.RelativeRotation.x, 0.1f);
-		ImGui::DragFloat3("Scale", &cube.RelativeScale3D.x, 0.1f);
+		ImGui::DragFloat3("Translation", &cube->RelativeLocation.x, 0.1f);
+		ImGui::DragFloat3("Rotation", &cube->RelativeRotation.x, 0.1f);
+		ImGui::DragFloat3("Scale", &cube->RelativeScale3D.x, 0.1f);
 		ImGui::End();
 
 		ImGui::Begin("Debug Camera");
@@ -281,7 +288,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		} while (elapsedTime < targetFrameTime);
 	}
 
-	renderer.ReleaseVertexBuffer(vertexBufferCube);
+	//renderer.ReleaseVertexBuffer(vertexBufferCube);
 
 	ImGui_ImplDX11_Shutdown();	//ImGui 리소스 해제
 	ImGui_ImplWin32_Shutdown();

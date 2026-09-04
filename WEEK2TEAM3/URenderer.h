@@ -3,6 +3,7 @@
 #include <cmath>
 
 #include "Core.h"
+#include "FVertex.h"
 
 class URenderer
 {
@@ -208,7 +209,7 @@ public:
 			layout, ARRAYSIZE(layout), vertexshaderCSO->GetBufferPointer(),
 			vertexshaderCSO->GetBufferSize(), &SimpleInputLayout);
 
-		Stride = sizeof(FVertexSimple);
+		Stride = sizeof(FVertex);
 
 		vertexshaderCSO->Release();
 		pixelshaderCSO->Release();
