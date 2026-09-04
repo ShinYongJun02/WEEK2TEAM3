@@ -1,15 +1,14 @@
 #pragma once
 
+#include <cmath>
+
 #include "Core.h"
 
 class URenderer
 {
 	struct FConstants
 	{
-		FVector Offset;
-		float Pad1;		// 16 byte pad
-		FVector Scale;	// (width, height, depth)
-		float Pad2;
+		FMatrix ModelMatrix;
 	};
 
 public:
@@ -275,7 +274,7 @@ public:
 		DeviceContext->PSSetShader(SimplePixelShader, nullptr, 0);
 	}
 
-	void UpdateConstant(FVector Offset, FVector Scale)
+	void UpdateConstant(FVector Translation, FVector Rotation, FVector Scale)
 	{
 		if (ConstantBuffer)
 		{
@@ -284,8 +283,41 @@ public:
 			DeviceContext->Map(ConstantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &constantbufferMSR);
 			FConstants* constants = (FConstants*)constantbufferMSR.pData;
 			{
-				constants->Offset = Offset;
-				constants->Scale = Scale;
+				FMatrix S(
+					FVector4(Scale.x, 0.0f, 0.0f, 0.0f),
+					FVector4(0.0f, Scale.y, 0.0f, 0.0f),
+					FVector4(0.0f, 0.0f, Scale.z, 0.0f),
+					FVector4(0.0f, 0.0f, 0.0f, 1.0f));
+
+				float radianX = Rotation.x * acos(-1) / 180.0f;
+				FMatrix RX(
+					FVector4(1.0f, 0.0f, 0.0f, 0.0f),
+					FVector4(0.0f, cos(radianX), sin(radianX), 0.0f),
+					FVector4(0.0f, -sin(radianX), cos(radianX), 0.0f),
+					FVector4(0.0f, 0.0f, 0.0f, 1.0f));
+
+				float radianY = Rotation.y * acos(-1) / 180.0f;
+				FMatrix RY(
+					FVector4(cos(radianY), 0.0f, -sin(radianY), 0.0f),
+					FVector4(0.0f, 1.0f, 0.0f, 0.0f),
+					FVector4(sin(radianY), 0.0f, cos(radianY), 0.0f),
+					FVector4(0.0f, 0.0f, 0.0f, 1.0f));
+
+				float radianZ = Rotation.z * acos(-1) / 180.0f;
+				FMatrix RZ(
+					FVector4(cos(radianZ), sin(radianZ), 0.0f, 0.0f),
+					FVector4(-sin(radianZ), cos(radianZ), 0.0f, 0.0f),
+					FVector4(0.0f, 0.0f, 1.0f, 0.0f),
+					FVector4(0.0f, 0.0f, 0.0f, 1.0f));
+
+				FMatrix T(
+					FVector4(1.0f, 0.0f, 0.0f, 0.0f),
+					FVector4(0.0f, 1.0f, 0.0f, 0.0f),
+					FVector4(0.0f, 0.0f, 1.0f, 0.0f),
+					FVector4(Translation.x, Translation.y, Translation.z, 1.0f));
+
+				// 모델 매트릭스 생성 M = S * R * T
+				constants->ModelMatrix = S * RX * RY * RZ * T;
 			}
 			DeviceContext->Unmap(ConstantBuffer, 0);
 		}

@@ -14,15 +14,7 @@
 // FVertexSimple, triangle_vertices, cube_vertices, sphere_vertices
 #include "Sphere.h"
 #include "URenderer.h"
-
-// 화면 경계
-const float leftBorder = -1.0f;
-const float rightBorder = 1.0f;
-const float topBorder = 1.0f;
-const float bottomBorder = -1.0f;
-
-// 중력
-const FVector G(0.0f, -9.8f, 0.0f);
+#include "UObject.h"
 
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -71,18 +63,23 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	ImGui_ImplWin32_Init((void*)hWnd);
 	ImGui_ImplDX11_Init(renderer.Device, renderer.DeviceContext);
 
+	// FPS 관리
 	const int targetFPS = 144;
-	const double targetFrameTime = 1000.0 / targetFPS;	// 한 프레임의 목표 시간 (밀리초 단위)
-
-	LARGE_INTEGER frequency;	// tick/sec
+	const double targetFrameTime = 1000.0 / targetFPS;
+	LARGE_INTEGER frequency;
 	QueryPerformanceFrequency(&frequency);
-
 	LARGE_INTEGER startTime, endTime;
 	double elapsedTime = 0.0;
 
+	// 큐브 리소스 생성
+	UINT numVerticesCube = sizeof(cube_vertices) / sizeof(FVertexSimple);
+	ID3D11Buffer* vertexBufferCube = renderer.CreateVertexBuffer(cube_vertices, sizeof(cube_vertices));
+	UObject cube;
+
+	// 종료 시그널
 	bool bIsExit = false;
 
-	// Main Loop (Quit Message가 들어오기 전까지 아래 Loop를 무한히 실행하게 됨)
+	// 메인 루프
 	while (bIsExit == false)
 	{
 		QueryPerformanceCounter(&startTime);
@@ -101,19 +98,32 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			}
 		}
 
+		// Transform
+
 		renderer.Prepare();
 		renderer.PrepareShader();
+
+		// Draw
+		renderer.UpdateConstant(cube.Translation, cube.Rotation, cube.Scale);
+		renderer.RenderPrimitive(vertexBufferCube, numVerticesCube);
 
 		ImGui_ImplDX11_NewFrame();
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
 
-		ImGui::Render();										// 그리기 명령 준비	
-		ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());	// 그리기 명령 실행
+		// ImGui
+		ImGui::Begin("Debug Cube");
+		ImGui::DragFloat3("Translation", &cube.Translation.x, 0.1f);
+		ImGui::DragFloat3("Rotation", &cube.Rotation.x, 0.1f);
+		ImGui::DragFloat3("Scale", &cube.Scale.x, 0.1f);
+		ImGui::End();
+
+		ImGui::Render();
+		ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
 		renderer.SwapBuffer();
 
-		do	// 프레임 대기
+		do
 		{
 			Sleep(0);
 			QueryPerformanceCounter(&endTime);
@@ -123,7 +133,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		} while (elapsedTime < targetFrameTime);
 	}
 
-	ImGui_ImplDX11_Shutdown();	//ImGui 리소스 해제
+	//ImGui 리소스 해제
+	ImGui_ImplDX11_Shutdown();
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
 

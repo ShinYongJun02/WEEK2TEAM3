@@ -1,9 +1,6 @@
 cbuffer constants : register(b0) // FConstants
 {
-	float3 Offset;
-	float Pad1;
-	float3 Scale;
-	float Pad2;
+	row_major matrix ModelMatrix;
 }
 
 struct VS_INPUT
@@ -18,17 +15,19 @@ struct PS_INPUT
 	float4 color : COLOR;
 };
 
-PS_INPUT mainVS(VS_INPUT input) // Vertex Shader
+// Vertex Shader
+PS_INPUT mainVS(VS_INPUT input) 
 {
 	PS_INPUT output;
     
-	output.position = input.position * float4(Scale, 1.0) + float4(Offset, 0);
+	output.position = mul(input.position, ModelMatrix);
 	output.color = input.color;
     
 	return output;
 }
 
-float4 mainPS(PS_INPUT input) : SV_TARGET // Pixel Shader
+// Pixel Shader
+float4 mainPS(PS_INPUT input) : SV_TARGET 
 {
 	return input.color;
 }
