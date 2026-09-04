@@ -9,6 +9,7 @@ UCubeComp::UCubeComp()
 
 UCubeComp::UCubeComp(URenderer& Renderer)
 {
+	NumVertices = CubeVerticesSize;
 	VertexBuffer = Renderer.CreateVertexBuffer(CubeVertices, CubeVerticesSize * sizeof(FVertex));
 }
 

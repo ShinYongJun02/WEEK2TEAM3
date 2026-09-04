@@ -51,6 +51,21 @@ void CreateDebugConsole() {
 	}
 }
 
+UPrimitiveComponent* SpawnPrimitiveByType(int typeIndex, URenderer& Renderer)
+{
+	switch (typeIndex)
+	{
+	case 0:
+		return NewObject<UCubeComp>(Renderer);
+	case 1:
+		return NewObject<USphereComp>(Renderer);
+	case 2:
+		return NewObject<UPlaneComp>(Renderer);
+	default:
+		return nullptr;
+	}
+}
+
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -146,6 +161,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	POINT pt;
 	GetCursorPos(&pt);          // 화면 좌표
 	ScreenToClient(hWnd, &pt);  // 클라이언트 좌표로 변환
+
+	//outliner
+	int32 SelectedObjectIndex = -1;
+
+	//Place Actor
+	static const char* PrimitiveTypeNames[] = { "Cube", "Sphere", "Plane" };
+	static int SelectedPrimitiveIndex = 0;
+	static int SpawnCount = 1;
 
 	// 종료 시그널
 	bool bIsExit = false;
@@ -253,13 +276,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		renderer.Prepare();
 		renderer.PrepareShader();
 
-		//renderer.UpdateModelConstant(cube.GetModelMatrix());
 		renderer.UpdateViewConstant(camera.GetViewMatrix() * camera.GetProjectionMatrix(renderer.ViewportInfo.Width / renderer.ViewportInfo.Height));
-		cube->Render(renderer);
-		sphere->Render(renderer);
-		plane->Render(renderer);
-		
-		//renderer.RenderPrimitive(vertexBufferCube, numVerticesCube);
+
+		for (UObject* obj : GUObjectArray)
+		{
+			UPrimitiveComponent* prim = dynamic_cast<UPrimitiveComponent*>(obj);
+			if (prim)
+			{
+				prim->Render(renderer);
+			}
+		}
 
 		ImGui_ImplDX11_NewFrame();
 		ImGui_ImplWin32_NewFrame();
@@ -273,10 +299,46 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			renderer.ViewportInfo.Height);
 
 		// ImGui
-		ImGui::Begin("Debug Cube");
-		ImGui::DragFloat3("Translation", &cube->RelativeLocation.x, 0.1f);
-		ImGui::DragFloat3("Rotation", &cube->RelativeRotation.x, 0.1f);
-		ImGui::DragFloat3("Scale", &cube->RelativeScale3D.x, 0.1f);
+
+
+		ImGui::Begin("Outliner");
+		
+		UObject* TempObject;
+		UPrimitiveComponent* prim;
+		for (int i = 0; i < GUObjectArray.size(); i++)
+		{
+			TempObject = GUObjectArray[i];
+
+			prim = dynamic_cast<UPrimitiveComponent*>(TempObject);
+			if (!prim) continue;
+
+			char label[64];
+			sprintf_s(label, "Object_%u", TempObject->UUID);
+
+			bool isSelected = (SelectedObjectIndex == i);
+			if (ImGui::Selectable(label, isSelected))
+			{
+				SelectedObjectIndex = i;
+			}
+		}
+		ImGui::End();
+
+		UPrimitiveComponent* SelectedObject;
+
+		ImGui::Begin("Details Panel");
+		
+		if (SelectedObjectIndex != -1)
+		{
+			TempObject = GUObjectArray[SelectedObjectIndex];
+			SelectedObject = dynamic_cast<UPrimitiveComponent*>(TempObject);
+			if (SelectedObject)
+			{
+				ImGui::DragFloat3("Translation", &SelectedObject->RelativeLocation.x, 0.1f);
+				ImGui::DragFloat3("Rotation", &SelectedObject->RelativeRotation.x, 0.1f);
+				ImGui::DragFloat3("Scale", &SelectedObject->RelativeScale3D.x, 0.1f);
+			}
+		}
+		
 		ImGui::End();
 
 		ImGui::Begin("Debug Camera");
@@ -285,6 +347,41 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		ImGui::DragFloat("fovY", &camera.fovY, 0.1f);
 		ImGui::Text("%d", pressed[6]);
 		ImGui::End();
+
+		ImGui::Begin("Place Actors");
+		ImGui::Text("FPS %.0f (%.2f ms)", ImGui::GetIO().Framerate, 1000.0f / ImGui::GetIO().Framerate);
+		ImGui::Separator();
+
+		if (ImGui::BeginCombo("Primitive", PrimitiveTypeNames[SelectedPrimitiveIndex]))
+		{
+			for (int i = 0; i < std::size(PrimitiveTypeNames); i++)
+			{
+				bool bIsSelected = (SelectedPrimitiveIndex == i);
+				if (ImGui::Selectable(PrimitiveTypeNames[i], bIsSelected))
+				{
+					SelectedPrimitiveIndex = i;
+				}
+				if (bIsSelected)
+				{
+					ImGui::SetItemDefaultFocus();
+				}
+			}
+			ImGui::EndCombo();
+		}
+
+		if (ImGui::Button("Spawn", ImVec2(80, 0)))
+		{
+			for (int i = 0; i < SpawnCount; i++)
+			{
+				SpawnPrimitiveByType(SelectedPrimitiveIndex, renderer);
+			}
+		}
+
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(150);
+		ImGui::SliderInt("Number of spawn", &SpawnCount, 1, 100);
+		ImGui::End();
+
 
 		ImGui::Render();
 		ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());

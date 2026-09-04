@@ -13,12 +13,12 @@ public:
 
 extern TArray<UObject*> GUObjectArray;
 
-template<typename T>
-T* NewObject()
+template<typename T, typename... Args>
+T* NewObject(Args&&... args)
 {
-	T* Object = new T();
-	Object->UUID = UEngineStatics::GenUUID();
-	Object->InternalIndex = (uint32)GUObjectArray.size();
-	GUObjectArray.push_back(Object);
-	return (Object);
+	T* obj = new T(std::forward<Args>(args)...);
+	obj->UUID = UEngineStatics::GenUUID();
+	obj->InternalIndex = (uint32)GUObjectArray.size();
+	GUObjectArray.push_back(obj);
+	return obj;
 }
