@@ -1,6 +1,12 @@
-cbuffer constants : register(b0) // FConstants
+cbuffer modelConstants : register(b0) // FConstants
 {
-	row_major matrix ModelMatrix;
+	row_major matrix Model;
+}
+
+cbuffer viewConstants : register(b1) // FConstants
+{
+	row_major matrix View;
+	row_major matrix Projection;
 }
 
 struct VS_INPUT
@@ -16,18 +22,18 @@ struct PS_INPUT
 };
 
 // Vertex Shader
-PS_INPUT mainVS(VS_INPUT input) 
+PS_INPUT mainVS(VS_INPUT input)
 {
 	PS_INPUT output;
     
-	output.position = mul(input.position, ModelMatrix);
+	output.position = mul(mul(mul(input.position, Model), View), Projection);
 	output.color = input.color;
     
 	return output;
 }
 
 // Pixel Shader
-float4 mainPS(PS_INPUT input) : SV_TARGET 
+float4 mainPS(PS_INPUT input) : SV_TARGET
 {
 	return input.color;
 }

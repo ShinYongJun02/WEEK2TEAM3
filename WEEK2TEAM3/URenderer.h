@@ -6,9 +6,15 @@
 
 class URenderer
 {
-	struct FConstants
+	struct FPrimitiveConstants
 	{
-		FMatrix ModelMatrix;
+		FMatrix Matrix;
+	};
+
+	struct FViewConstants
+	{
+		FMatrix View;
+		FMatrix Projection;
 	};
 
 public:
@@ -30,7 +36,8 @@ public:
 	ID3D11InputLayout* SimpleInputLayout = nullptr;
 
 	// CreateConstantBuffer
-	ID3D11Buffer* ConstantBuffer = nullptr;
+	ID3D11Buffer* ModelConstantBuffer = nullptr;
+	ID3D11Buffer* ViewConstantBuffer = nullptr;
 
 	// values
 	D3D11_VIEWPORT ViewportInfo;
@@ -210,20 +217,32 @@ public:
 	void CreateConstantBuffer()
 	{
 		D3D11_BUFFER_DESC constantbufferdesc = {};
-		constantbufferdesc.ByteWidth = sizeof(FConstants) + 0xf & 0xfffffff0;
+		constantbufferdesc.ByteWidth = sizeof(FPrimitiveConstants) + 0xf & 0xfffffff0;
 		constantbufferdesc.Usage = D3D11_USAGE_DYNAMIC;
 		constantbufferdesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 		constantbufferdesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 
-		Device->CreateBuffer(&constantbufferdesc, nullptr, &ConstantBuffer);
+		Device->CreateBuffer(&constantbufferdesc, nullptr, &ModelConstantBuffer);
+
+		D3D11_BUFFER_DESC viewconstantbufferdesc = {};
+		viewconstantbufferdesc.ByteWidth = sizeof(FViewConstants) + 0xf & 0xfffffff0;
+		viewconstantbufferdesc.Usage = D3D11_USAGE_DYNAMIC;
+		viewconstantbufferdesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		viewconstantbufferdesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		Device->CreateBuffer(&viewconstantbufferdesc, nullptr, &ViewConstantBuffer);
 	}
 
 	void ReleaseConstantBuffer()
 	{
-		if (ConstantBuffer)
+		if (ModelConstantBuffer)
 		{
-			ConstantBuffer->Release();
-			ConstantBuffer = nullptr;
+			ModelConstantBuffer->Release();
+			ModelConstantBuffer = nullptr;
+		}
+		if (ViewConstantBuffer)
+		{
+			ViewConstantBuffer->Release();
+			ViewConstantBuffer = nullptr;
 		}
 	}
 
@@ -266,60 +285,46 @@ public:
 		DeviceContext->IASetInputLayout(SimpleInputLayout);
 
 		DeviceContext->VSSetShader(SimpleVertexShader, nullptr, 0);
-		if (ConstantBuffer)
+		if (ModelConstantBuffer)
 		{
-			DeviceContext->VSSetConstantBuffers(0, 1, &ConstantBuffer);
+			DeviceContext->VSSetConstantBuffers(0, 1, &ModelConstantBuffer);
+		}
+		if (ViewConstantBuffer)
+		{
+			DeviceContext->VSSetConstantBuffers(1, 1, &ViewConstantBuffer);
 		}
 
 		DeviceContext->PSSetShader(SimplePixelShader, nullptr, 0);
 	}
 
-	void UpdateConstant(FVector Translation, FVector Rotation, FVector Scale)
+	void UpdateModelConstant(FMatrix model)
 	{
-		if (ConstantBuffer)
+		if (ModelConstantBuffer)
 		{
 			D3D11_MAPPED_SUBRESOURCE constantbufferMSR;
 
-			DeviceContext->Map(ConstantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &constantbufferMSR);
-			FConstants* constants = (FConstants*)constantbufferMSR.pData;
+			DeviceContext->Map(ModelConstantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &constantbufferMSR);
+			FPrimitiveConstants* constants = (FPrimitiveConstants*)constantbufferMSR.pData;
 			{
-				FMatrix S(
-					FVector4(Scale.x, 0.0f, 0.0f, 0.0f),
-					FVector4(0.0f, Scale.y, 0.0f, 0.0f),
-					FVector4(0.0f, 0.0f, Scale.z, 0.0f),
-					FVector4(0.0f, 0.0f, 0.0f, 1.0f));
-
-				float radianX = Rotation.x * acos(-1) / 180.0f;
-				FMatrix RX(
-					FVector4(1.0f, 0.0f, 0.0f, 0.0f),
-					FVector4(0.0f, cos(radianX), sin(radianX), 0.0f),
-					FVector4(0.0f, -sin(radianX), cos(radianX), 0.0f),
-					FVector4(0.0f, 0.0f, 0.0f, 1.0f));
-
-				float radianY = Rotation.y * acos(-1) / 180.0f;
-				FMatrix RY(
-					FVector4(cos(radianY), 0.0f, -sin(radianY), 0.0f),
-					FVector4(0.0f, 1.0f, 0.0f, 0.0f),
-					FVector4(sin(radianY), 0.0f, cos(radianY), 0.0f),
-					FVector4(0.0f, 0.0f, 0.0f, 1.0f));
-
-				float radianZ = Rotation.z * acos(-1) / 180.0f;
-				FMatrix RZ(
-					FVector4(cos(radianZ), sin(radianZ), 0.0f, 0.0f),
-					FVector4(-sin(radianZ), cos(radianZ), 0.0f, 0.0f),
-					FVector4(0.0f, 0.0f, 1.0f, 0.0f),
-					FVector4(0.0f, 0.0f, 0.0f, 1.0f));
-
-				FMatrix T(
-					FVector4(1.0f, 0.0f, 0.0f, 0.0f),
-					FVector4(0.0f, 1.0f, 0.0f, 0.0f),
-					FVector4(0.0f, 0.0f, 1.0f, 0.0f),
-					FVector4(Translation.x, Translation.y, Translation.z, 1.0f));
-
-				// 모델 매트릭스 생성 M = S * R * T
-				constants->ModelMatrix = S * RX * RY * RZ * T;
+				constants->Matrix = model;
 			}
-			DeviceContext->Unmap(ConstantBuffer, 0);
+			DeviceContext->Unmap(ModelConstantBuffer, 0);
+		}
+	}
+
+	void UpdateViewConstant(FMatrix view, FMatrix projection)
+	{
+		if (ViewConstantBuffer)
+		{
+			D3D11_MAPPED_SUBRESOURCE constantbufferMSR;
+
+			DeviceContext->Map(ViewConstantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &constantbufferMSR);
+			FViewConstants* constants = (FViewConstants*)constantbufferMSR.pData;
+			{
+				constants->View = view;
+				constants->Projection = projection;
+			}
+			DeviceContext->Unmap(ViewConstantBuffer, 0);
 		}
 	}
 

@@ -206,4 +206,40 @@ struct FMatrix
 		}
 		return result;
 	}
+
+	FMatrix operator*(float scalar) const
+	{
+		FMatrix result;
+		for (int i = 0; i < 4; i++)
+		{
+			for (int j = 0; j < 4; j++)
+			{
+				result.M[i][j] = M[i][j] * scalar;
+			}
+		}
+		return result;
+	}
+
+	FMatrix GetTranspose() const
+	{
+		FMatrix result;
+		for (int i = 0;i < 4;i++)
+		{
+			for (int j = 0;j < 4;j++)
+			{
+				result.M[i][j] = M[j][i];
+			}
+		}
+
+		return result;
+	}
+
+	static FMatrix GetIdentity()
+	{
+		return FMatrix(
+			FVector4(1.0f, 0.0f, 0.0f, 0.0f),
+			FVector4(0.0f, 1.0f, 0.0f, 0.0f),
+			FVector4(0.0f, 0.0f, 1.0f, 0.0f),
+			FVector4(0.0f, 0.0f, 0.0f, 1.0f));
+	}
 };
