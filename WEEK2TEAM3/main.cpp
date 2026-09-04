@@ -1,26 +1,75 @@
-#pragma comment(lib, "user32")			
-#pragma comment(lib, "d3d11")			
-#pragma comment(lib, "d3dcompiler")		
+#include "Core.h"
 
-#include <windows.h>					
-#include <d3d11.h>						
-#include <d3dcompiler.h>			
-
-#include "ImGui/imgui.h"				
-#include "ImGui/imgui_internal.h"		
-#include "ImGui/imgui_impl_dx11.h"		
-#include "ImGui/imgui_impl_win32.h"		
-
-// FVertexSimple, triangle_vertices, cube_vertices, sphere_vertices
 #include "Sphere.h"
 #include "URenderer.h"
 #include "UObject.h"
 #include "UCamera.h"
+#include "MathF.h"
+
+// 화면 경계
+const float leftBorder = -1.0f;
+const float rightBorder = 1.0f;
+const float topBorder = 1.0f;
+const float bottomBorder = -1.0f;
+
+class TWindowEventHandler {
+public:
+	TWindowEventHandler(URenderer& renderer) : Renderer(renderer) {}
+
+	void HandleResize(UINT width, UINT height) 
+	{
+		Renderer.Resize(width, height);
+	}
+
+private:
+	URenderer& Renderer;
+};
+
+struct FCamera
+{
+	FVector Position;
+	FVector Rotation;
+
+	float Fov;
+	float ZNear;
+	float ZFar;
+
+	inline FMatrix GetViewMatrix()
+	{
+		FVector4 target = FVector4(Front, 0.0f) * RotateY(Rotation.y) * RotateX(Rotation.x);
+		return LookAt(Position, Position + FVector(target.x, target.y, target.z), Up);
+	}
+};
+
+void CreateDebugConsole() {
+	// 1. Allocate a new console for the calling process
+	if (AllocConsole()) {
+		FILE* fp;
+
+		// 2. Redirect standard output (stdout) to the console
+		freopen_s(&fp, "CONOUT$", "w", stdout);
+		// 3. Redirect standard error (stderr) to the console
+		freopen_s(&fp, "CONOUT$", "w", stderr);
+		// 4. Redirect standard input (stdin) to the console
+		freopen_s(&fp, "CONIN$", "r", stdin);
+
+		// 5. Clear the error state for each of the C++ standard streams
+		std::clog.clear();
+		std::cerr.clear();
+		std::cout.clear();
+		std::cin.clear();
+
+		// Optional: Set a title for your debug window
+		SetConsoleTitle(L"Debug Console");
+	}
+}
 
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	TWindowEventHandler* eventHandler = reinterpret_cast<TWindowEventHandler*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
+	
 	// ImGui 메시지 처리
 	if (ImGui_ImplWin32_WndProcHandler(hWnd, message, wParam, lParam))
 	{
@@ -32,6 +81,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
+	case WM_SIZE:
+		if (eventHandler) 
+		{
+			UINT width = LOWORD(lParam);
+			UINT height = HIWORD(lParam);
+			eventHandler->HandleResize(width, height);
+		}
+		break;
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
@@ -40,7 +97,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 }
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
-{
+	{
+	#if _DEBUG
+	CreateDebugConsole();
+	#endif
+
 	WCHAR WindowClass[] = L"JungleWindowClass";
 	WCHAR Title[] = L"Game Tech Lab";
 
@@ -56,6 +117,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	renderer.Create(hWnd);
 	renderer.CreateShader();
 	renderer.CreateConstantBuffer();
+
+	TWindowEventHandler windowEventHandler(renderer);
+
+	SetWindowLongPtrW(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(&windowEventHandler));
 
 	// ImGui 초기화
 	IMGUI_CHECKVERSION();
@@ -93,7 +158,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// 종료 시그널
 	bool bIsExit = false;
 
-	// 메인 루프
 	while (bIsExit == false)
 	{
 		QueryPerformanceCounter(&startTime);
@@ -195,10 +259,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		renderer.Prepare();
 		renderer.PrepareShader();
 
-		// Draw
-		renderer.UpdateModelConstant(cube.GetModelMatrix());
-		renderer.UpdateViewConstant(camera.GetViewMatrix(), camera.GetProjectionMatrix(renderer.ViewportInfo.Width / renderer.ViewportInfo.Height));
-		renderer.RenderPrimitive(vertexBufferCube, numVerticesCube);
+		renderer.UpdateConstant(modelMatrix, viewMatrix, projMatrix);
+		renderer.DrawIndexed(cubeVertexBuffer, cubeIndexBuffer, 36);
 
 		ImGui_ImplDX11_NewFrame();
 		ImGui_ImplWin32_NewFrame();
@@ -220,7 +282,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 		ImGui::Render();
 		ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-
+	
+		// 그리기 명령 실행
 		renderer.SwapBuffer();
 
 		do
@@ -233,8 +296,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		} while (elapsedTime < targetFrameTime);
 	}
 
-	//ImGui 리소스 해제
-	ImGui_ImplDX11_Shutdown();
+	renderer.ReleaseVertexBuffer(cubeVertexBuffer);
+	renderer.ReleaseIndexBuffer(cubeIndexBuffer);
+
+	ImGui_ImplDX11_Shutdown();	//ImGui 리소스 해제
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
 
