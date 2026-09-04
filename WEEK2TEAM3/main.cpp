@@ -1,8 +1,6 @@
 #include "Core.h"
-
 #include "Sphere.h"
 #include "URenderer.h"
-#include "UObject.h"
 #include "UCamera.h"
 #include "UPrimitvieComponent.h"
 
@@ -125,12 +123,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	UINT numVerticesCube = sizeof(cube_vertices) / sizeof(FVertexSimple);
 	ID3D11Buffer* vertexBufferCube = renderer.CreateVertexBuffer(cube_vertices, sizeof(cube_vertices));
 
-	// 큐브
-	UObject cube;
-
 	// 카메라
 	UCamera camera;
-	camera.Translation += FVector(-5.0f);
+	camera.RelativeLocation += FVector(-5.0f);
 	bool pressed[7] = {}; // WSDAEQ, MR
 	float cameraSpeed = 5.0f;
 
@@ -236,40 +231,24 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		pt = temp;
 
 		// 카메라 무빙 (카메라 z축 회전 = 오른쪽 보기, 카메라 y축 회전 = 아래 보기
-		camera.Translation += FVector(pressed[0] - pressed[1], pressed[2] - pressed[3], pressed[4] - pressed[5]) * ((float)elapsedTime / 1000.0f);
+		camera.RelativeLocation += FVector(pressed[0] - pressed[1], pressed[2] - pressed[3], pressed[4] - pressed[5]) * ((float)elapsedTime / 1000.0f);
 		if (pressed[6])
 		{
-			camera.Rotation += FVector(0.0f, distY, distX) * ((float)elapsedTime / 1000.0f) * cameraSpeed;
+			camera.RelativeRotation += FVector(0.0f, distY, distX) * ((float)elapsedTime / 1000.0f) * cameraSpeed;
 		}
 
 		// Transform
-		// cube.Rotation += FVector(0.0f, 0.0f, 90.0f) * ((float)elapsedTime / 1000.0f);
 
 		renderer.Prepare();
 		renderer.PrepareShader();
 
-		renderer.UpdateModelConstant(cube.GetModelMatrix());
-		renderer.UpdateViewConstant(camera.GetViewMatrix(), camera.GetProjectionMatrix(renderer.ViewportInfo.Width / renderer.ViewportInfo.Height));
-		renderer.RenderPrimitive(vertexBufferCube, numVerticesCube);
+		renderer.UpdateViewConstant(camera.GetViewMatrix() * camera.GetProjectionMatrix(renderer.ViewportInfo.Width / renderer.ViewportInfo.Height));
 
 		ImGui_ImplDX11_NewFrame();
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
 
 		// ImGui
-		ImGui::Begin("Debug Cube");
-		ImGui::DragFloat3("Translation", &cube.Translation.x, 0.1f);
-		ImGui::DragFloat3("Rotation", &cube.Rotation.x, 0.1f);
-		ImGui::DragFloat3("Scale", &cube.Scale.x, 0.1f);
-		ImGui::End();
-
-		ImGui::Begin("Debug Camera");
-		ImGui::DragFloat3("Translation", &camera.Translation.x, 0.1f);
-		ImGui::DragFloat3("Rotation", &camera.Rotation.x, 0.1f);
-		ImGui::DragFloat("fovY", &camera.fovY, 0.1f);
-		ImGui::Text("%d", pressed[6]);
-		ImGui::End();
-
 		{
 			ImGui::Begin("Jungle Control Panel");
 

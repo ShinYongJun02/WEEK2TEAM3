@@ -1,11 +1,10 @@
 #pragma once
 
-#include <cmath>
-
-#include "UObject.h"
+#include "USceneComponent.h"
 #include "Core.h"
+#include "Helper.h"
 
-class UCamera : public UObject
+class UCamera : public USceneComponent
 {
 public:
 	float nearZ = 0.1f;
@@ -28,9 +27,9 @@ public:
 		// = 카메라를 원점으로 이동시키는 행렬(=카메라의 이동행렬의 역행렬) * 카메라를 월드좌표계에 일치시키는 회전행렬(=카메라 회전행렬의 역행렬)
 		// = 카메라 좌표계 행렬의 역행렬 (Rotation * Translation) ^ -1 = Translation ^ -1 * Rotation ^ -1
 		FMatrix TranslationInv = FMatrix::GetIdentity();
-		TranslationInv.M[3][0] = -Translation.x;
-		TranslationInv.M[3][1] = -Translation.y;
-		TranslationInv.M[3][2] = -Translation.z;
+		TranslationInv.M[3][0] = -RelativeLocation.x;
+		TranslationInv.M[3][1] = -RelativeLocation.y;
+		TranslationInv.M[3][2] = -RelativeLocation.z;
 
 		FMatrix ViewMatrix = TranslationInv * GetRotationMatrix().GetTranspose() * GetUEtoDXAxisSwap();
 		return ViewMatrix;
@@ -39,7 +38,7 @@ public:
 	// aspect = width / height
 	FMatrix GetProjectionMatrix(float aspect)
 	{
-		float radian = UObject::DegreeToRadian(fovY);
+		float radian = DegreeToRadian(fovY);
 		float scaleY = 1.0f / tan(radian / 2);
 		float scaleX = scaleY / aspect;
 		float r = farZ / (farZ - nearZ);

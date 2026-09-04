@@ -1,6 +1,7 @@
 #pragma once
 
 #include "UObject.h"
+#include "Helper.h"
 
 class USceneComponent : public UObject
 {
