@@ -4,6 +4,7 @@
 #include "URenderer.h"
 #include "UObject.h"
 #include "UCamera.h"
+#include "UPrimitvieComponent.h"
 
 // 화면 경계
 const float leftBorder = -1.0f;
@@ -141,6 +142,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// 종료 시그널
 	bool bIsExit = false;
 
+	// UI Property
+	int32 selectedPrimitiveType = 0;
+
+	TArray<TSharedPtr<UPrimitiveComponent>> primitiveComponents;
+
 	while (bIsExit == false)
 	{
 		QueryPerformanceCounter(&startTime);
@@ -263,6 +269,48 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		ImGui::DragFloat("fovY", &camera.fovY, 0.1f);
 		ImGui::Text("%d", pressed[6]);
 		ImGui::End();
+
+		{
+			ImGui::Begin("Jungle Control Panel");
+
+			FString primitiveTypes[] = { "Cube", "Sphere", "Plane"};
+			if (ImGui::BeginCombo("Primitive Type", primitiveTypes[selectedPrimitiveType].c_str(), 0))
+			{
+				for (int i = 0; i < IM_ARRAYSIZE(primitiveTypes); i++)
+				{
+					bool isSelected = (selectedPrimitiveType == i);
+					if (ImGui::Selectable(primitiveTypes[i].c_str(), isSelected))
+					{
+						selectedPrimitiveType = i;
+					}
+					if (isSelected)
+					{
+						ImGui::SetItemDefaultFocus();
+					}
+				}
+				ImGui::EndCombo();
+			}
+
+			if (ImGui::Button("Spawn")) 
+			{
+				switch (selectedPrimitiveType)
+				{
+				case 0: // Cube
+				{
+					break;
+				}
+				case 1: // Sphere
+				{
+					break;
+				}
+				case 2: // Plane
+				{
+					break;
+				}
+				}
+			}
+			ImGui::End();
+		}
 
 		ImGui::Render();
 		ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());

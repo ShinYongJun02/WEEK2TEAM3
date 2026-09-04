@@ -1,9 +1,15 @@
 #pragma once
 
-struct FVertexSimple
+#include "Core.h"
+
+FVertexSimple plane_vertices[] =
 {
-	float x, y, z;    // Position
-	float r, g, b, a; // Color
+	{ -1.0f, 0.0f, -1.0f,  1.0f, 0.0f, 0.0f, 1.0f }, // Bottom-left (red)
+	{ 1.0f, 0.0f, -1.0f,  0.0f, 1.0f, 0.0f, 1.0f }, // Bottom-right (green)
+	{ -1.0f, 0.0f,  1.0f,  0.0f, 0.0f, 1.0f, 1.0f }, // Top-left (blue)
+	{ -1.0f, 0.0f,  1.0f,  0.0f, 0.0f, 1.0f, 1.0f }, // Top-left (blue)
+	{ 1.0f, 0.0f, -1.0f,  0.0f, 1.0f, 0.0f, 1.0f }, // Bottom-right (green)
+	{ 1.0f, 0.0f,  1.0f,  1.0f, 1.0f, 1.0f, 1.0f }   // Top-right (white)
 };
 
 FVertexSimple triangle_vertices[] =

@@ -11,6 +11,24 @@
 
 #include <cmath>
 #include <iostream>
+#include <vector>
+
+typedef int int32;
+typedef unsigned int uint32;
+
+template <typename T>
+using TArray = std::vector<T>;
+
+template <typename T>
+using TSharedPtr = std::shared_ptr<T>;
+
+template <typename T, typename... Args>
+TSharedPtr<T> MakeShared(Args&&... args)
+{
+	return std::make_shared<T>(std::forward<Args>(args)...);
+}
+
+using FString = std::string;
 
 struct FVector
 {
@@ -252,4 +270,10 @@ struct FMatrix
 			FVector4(0.0f, 0.0f, 1.0f, 0.0f),
 			FVector4(0.0f, 0.0f, 0.0f, 1.0f));
 	}
+};
+
+struct FVertexSimple
+{
+	float x, y, z;    // Position
+	float r, g, b, a; // Color
 };
