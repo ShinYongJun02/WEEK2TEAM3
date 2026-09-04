@@ -7,8 +7,6 @@
 class UCubeComp : public UPrimitiveComponent
 {
 public:
-	//ID3D11Buffer* vertexBufferCube;
-
 	UCubeComp();
 
 	UCubeComp(URenderer& Renderer);

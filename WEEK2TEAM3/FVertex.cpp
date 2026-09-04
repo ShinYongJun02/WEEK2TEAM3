@@ -1,6 +1,6 @@
 #include "FVertex.h"
 
-FVertex plane_vertices[] =
+FVertex PlaneVertices[] =
 {
 	{ -1.0f, -1.0f, 0.0f,  1.0f, 0.0f, 0.0f, 1.0f },
 	{  1.0f,  1.0f, 0.0f,  0.0f, 0.0f, 1.0f, 1.0f },
@@ -9,6 +9,8 @@ FVertex plane_vertices[] =
 	{ -1.0f, -1.0f, 0.0f,  0.0f, 0.0f, 1.0f, 1.0f },
 	{  1.0f, -1.0f, 0.0f,  0.0f, 1.0f, 0.0f, 1.0f }
 };
+
+int32 PlaneVerticesSize = static_cast<int32>(sizeof(PlaneVertices) / sizeof(FVertex));
 
 FVertex TriangleVertices[] =
 {

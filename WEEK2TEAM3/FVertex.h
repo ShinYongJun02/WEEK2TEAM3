@@ -14,4 +14,5 @@ extern FVertex TriangleVertices[];
 extern int32 TriangleVerticesSize;
 extern FVertex SphereVertices[];
 extern int32 SphereVerticesSize;
-
+extern FVertex PlaneVertices[];
+extern int32 PlaneVerticesSize;

@@ -6,8 +6,7 @@
 
 class USphereComp : public UPrimitiveComponent
 {
-	//ID3D11Buffer* vertexBufferCube;
-
+public:
 	USphereComp();
 
 	USphereComp(URenderer& Renderer);

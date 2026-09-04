@@ -6,6 +6,8 @@
 
 
 #include "UCubeComp.h"
+#include "USphereComp.h"
+#include "UPlaneComp.h"
 
 // 화면 경계
 const float leftBorder = -1.0f;
@@ -122,14 +124,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	LARGE_INTEGER startTime, endTime;
 	double elapsedTime = 0.0;
 
-	// 리소스 생성
-	//UINT numVerticesCube = sizeof(cube_vertices) / sizeof(FVertex);
-	//ID3D11Buffer* vertexBufferCube = renderer.CreateVertexBuffer(CubeVertices, CubeVerticesSize);
-
-	// 큐브
-	// USceneComponent cube;
 	UCubeComp* cube = NewObject<UCubeComp>();
 	cube->setVertexBuffer(renderer);
+
+	USphereComp* sphere = NewObject<USphereComp>();
+	sphere->setVertexBuffer(renderer);
+
+	sphere->RelativeLocation = FVector(5.0f, 5.0f, 1.0f);
+
+	UPlaneComp* plane = NewObject<UPlaneComp>();
+	plane->setVertexBuffer(renderer);
+	plane->RelativeLocation = FVector(-5.0f, -5.0f, 1.0f);
 
 	// 카메라
 	UCamera camera;
@@ -251,6 +256,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		//renderer.UpdateModelConstant(cube.GetModelMatrix());
 		renderer.UpdateViewConstant(camera.GetViewMatrix() * camera.GetProjectionMatrix(renderer.ViewportInfo.Width / renderer.ViewportInfo.Height));
 		cube->Render(renderer);
+		sphere->Render(renderer);
+		plane->Render(renderer);
 		
 		//renderer.RenderPrimitive(vertexBufferCube, numVerticesCube);
 
