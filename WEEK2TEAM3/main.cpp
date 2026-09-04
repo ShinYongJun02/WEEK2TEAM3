@@ -3,6 +3,7 @@
 #include "URenderer.h"
 #include "UCamera.h"
 #include "UPrimitvieComponent.h"
+#include "UResourceManager.h"
 
 // 화면 경계
 const float leftBorder = -1.0f;
@@ -100,6 +101,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	renderer.CreateShader();
 	renderer.CreateConstantBuffer();
 
+	// Init ResourceManager
+	UResourceManager resourceManager;
+	resourceManager.Initialize(renderer);
+
 	TWindowEventHandler windowEventHandler(renderer);
 
 	SetWindowLongPtrW(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(&windowEventHandler));
@@ -119,10 +124,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	LARGE_INTEGER startTime, endTime;
 	double elapsedTime = 0.0;
 
-	// 리소스 생성
-	UINT numVerticesCube = sizeof(cube_vertices) / sizeof(FVertexSimple);
-	ID3D11Buffer* vertexBufferCube = renderer.CreateVertexBuffer(cube_vertices, sizeof(cube_vertices));
-
 	// 카메라
 	UCamera camera;
 	camera.RelativeLocation += FVector(-5.0f);
@@ -141,6 +142,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	int32 selectedPrimitiveType = 0;
 
 	TArray<TSharedPtr<UPrimitiveComponent>> primitiveComponents;
+	TSharedPtr<UPrimitiveComponent> selectedComponent = nullptr;
 
 	while (bIsExit == false)
 	{
@@ -238,11 +240,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		}
 
 		// Transform
-
 		renderer.Prepare();
 		renderer.PrepareShader();
 
 		renderer.UpdateViewConstant(camera.GetViewMatrix() * camera.GetProjectionMatrix(renderer.ViewportInfo.Width / renderer.ViewportInfo.Height));
+
+		for (int i = 0; i < primitiveComponents.size(); i++)
+		{
+			primitiveComponents[i]->Render(renderer);
+		}
 
 		ImGui_ImplDX11_NewFrame();
 		ImGui_ImplWin32_NewFrame();
@@ -272,22 +278,53 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 			if (ImGui::Button("Spawn")) 
 			{
+				FVector spawnLocation = camera.RelativeLocation + camera.GetForward() * 2.0f;
+
+				TSharedPtr<UPrimitiveComponent> newObject;
 				switch (selectedPrimitiveType)
 				{
 				case 0: // Cube
 				{
+					newObject = MakeShared<UCubeComp>(resourceManager);
 					break;
 				}
 				case 1: // Sphere
 				{
+					newObject = MakeShared<USphereComp>(resourceManager);
 					break;
 				}
 				case 2: // Plane
 				{
+					newObject = MakeShared<UPlaneComp>(resourceManager);
 					break;
 				}
 				}
+				newObject->RelativeLocation = spawnLocation;
+				primitiveComponents.push_back(newObject);
 			}
+			ImGui::End();
+		}
+
+		{
+			ImGui::Begin("Jungle Object Property");
+
+			selectedComponent = nullptr;
+			if (primitiveComponents.size() > 0)
+			{
+				selectedComponent = primitiveComponents.back();
+			}
+
+			if (selectedComponent)
+			{
+				ImGui::DragFloat3("Location", &selectedComponent->RelativeLocation.x, 0.1f);
+				ImGui::DragFloat3("Rotation", &selectedComponent->RelativeRotation.x, 0.1f);
+				ImGui::DragFloat3("Scale", &selectedComponent->RelativeScale3D.x, 0.1f);
+			}
+			else
+			{
+				ImGui::Text("No object selected.");
+			}
+
 			ImGui::End();
 		}
 
@@ -307,11 +344,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		} while (elapsedTime < targetFrameTime);
 	}
 
-	renderer.ReleaseVertexBuffer(vertexBufferCube);
-
 	ImGui_ImplDX11_Shutdown();	//ImGui 리소스 해제
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
+
+	resourceManager.Release();
 
 	// 렌더러 리소스 해제
 	renderer.ReleaseConstantBuffer();

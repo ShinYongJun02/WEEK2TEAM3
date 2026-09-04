@@ -1,40 +1,24 @@
 #include "UPrimitvieComponent.h"
 #include "URenderer.h"
 
-extern FVertexSimple plane_vertices[];
-extern FVertexSimple cube_vertices[];
-extern FVertexSimple sphere_vertices[];
-
-UPrimitiveComponent::UPrimitiveComponent(URenderer& renderer)
-	: Renderer(renderer)
-	, VertexBuffer(nullptr)
-	, VertexCount(0)
+void UPrimitiveComponent::Render(URenderer& renderer)
 {
+	renderer.UpdateModelConstant(GetModelMatrix());
+	renderer.RenderPrimitive(StaticMesh->VertexBuffer, StaticMesh->VertexCount);
 }
 
-void UPrimitiveComponent::Render()
+UCubeComp::UCubeComp(UResourceManager& resourceManager)
 {
-	Renderer.RenderPrimitive(VertexBuffer, VertexCount);
+	StaticMesh = resourceManager.GetStaticMesh("Cube");
 }
 
-UCubeComp::UCubeComp(URenderer& renderer)
-	: UPrimitiveComponent(renderer)
+USphereComp::USphereComp(UResourceManager& resourceManager)
 {
-	VertexCount = 36;
-	VertexBuffer = renderer.CreateVertexBuffer(cube_vertices, sizeof(FVertexSimple) * VertexCount);
+	StaticMesh = resourceManager.GetStaticMesh("Sphere");
 }
 
-USphereComp::USphereComp(URenderer& renderer)
-	: UPrimitiveComponent(renderer)
+UPlaneComp::UPlaneComp(UResourceManager& resourceManager)
 {
-	VertexCount = 2400;
-	VertexBuffer = renderer.CreateVertexBuffer(sphere_vertices, sizeof(FVertexSimple) * VertexCount);
-}
-
-UPlaneComp::UPlaneComp(URenderer& renderer)
-	: UPrimitiveComponent(renderer)
-{
-	VertexCount = 6;
-	VertexBuffer = renderer.CreateVertexBuffer(plane_vertices, sizeof(FVertexSimple) * VertexCount);
+	StaticMesh = resourceManager.GetStaticMesh("Plane");
 }
 

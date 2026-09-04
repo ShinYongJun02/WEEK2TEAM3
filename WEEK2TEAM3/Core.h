@@ -12,6 +12,7 @@
 #include <cmath>
 #include <iostream>
 #include <vector>
+#include <map>
 
 typedef int int32;
 typedef unsigned int uint32;
@@ -29,6 +30,9 @@ TSharedPtr<T> MakeShared(Args&&... args)
 }
 
 using FString = std::string;
+
+template <typename TKey, typename TValue>
+using TMap = std::map<TKey, TValue>;
 
 struct FVector
 {
@@ -272,8 +276,11 @@ struct FMatrix
 	}
 };
 
+static const FVector Front = FVector(1.0f, 0.0f, 0.0f);
+
 struct FVertexSimple
 {
 	float x, y, z;    // Position
 	float r, g, b, a; // Color
 };
+

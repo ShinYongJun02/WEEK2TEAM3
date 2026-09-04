@@ -75,4 +75,10 @@ public:
 	{
 		return GetScaleMatrix() * GetRotationMatrix() * GetTranslationMatrix();
 	}
+
+	FVector GetForward() const
+	{
+		FMatrix rotationMatrix = GetRotationMatrix();
+		return FVector(rotationMatrix.M[0][0], rotationMatrix.M[0][1], rotationMatrix.M[0][2]);
+	}
 };

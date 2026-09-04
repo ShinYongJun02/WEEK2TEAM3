@@ -1,37 +1,33 @@
 #pragma once
 
 #include "USceneComponent.h"
+#include "UResourceManager.h"
 
 class URenderer;
 
 class UPrimitiveComponent : public USceneComponent
 {
 public:
-	UPrimitiveComponent(URenderer& renderer);
-
-	void Render();
+	void Render(URenderer& renderer);
 
 protected:
-	URenderer& Renderer;
-
-	ID3D11Buffer* VertexBuffer;
-	uint32 VertexCount;
+	TSharedPtr<FStaticMesh> StaticMesh;
 };
 
 class UCubeComp : public UPrimitiveComponent
 {
 public:
-	UCubeComp(URenderer& renderer);
+	UCubeComp(UResourceManager& resourceManager);
 };
 
 class USphereComp : public UPrimitiveComponent
 {
 public:
-	USphereComp(URenderer& renderer);
+	USphereComp(UResourceManager& resourceManager);
 };
 
 class UPlaneComp : public UPrimitiveComponent
 {
 public:
-	UPlaneComp(URenderer& renderer);
+	UPlaneComp(UResourceManager& resourceManager);
 };
