@@ -206,8 +206,8 @@ public:
 
 		D3D11_INPUT_ELEMENT_DESC layout[] =
 		{
-			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(FVertex, position), D3D11_INPUT_PER_VERTEX_DATA, 0},
-			{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(FVertex, color), D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+			{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		};
 
 		Device->CreateInputLayout(
@@ -293,10 +293,10 @@ public:
 	}
 
 	template <typename T>
-	FVertexBuffer CreateVertexBuffer(T* vertices, UINT count)
+	ID3D11Buffer* CreateVertexBuffer(T* vertices, UINT byteWidth)
 	{
 		D3D11_BUFFER_DESC vertexbufferdesc = {};
-		vertexbufferdesc.ByteWidth = sizeof(T) * count;
+		vertexbufferdesc.ByteWidth = byteWidth;
 		vertexbufferdesc.Usage = D3D11_USAGE_IMMUTABLE;
 		vertexbufferdesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 
@@ -305,17 +305,12 @@ public:
 		ID3D11Buffer* vertexBuffer;
 		Device->CreateBuffer(&vertexbufferdesc, &vertexbufferSRD, &vertexBuffer);
 
-		return FVertexBuffer{ vertexBuffer, sizeof(T) };
+		return vertexBuffer;
 	}
 
-	void ReleaseVertexBuffer(FVertexBuffer& vb)
+	void ReleaseVertexBuffer(ID3D11Buffer* vb)
 	{
-		if (vb.buffer)
-		{
-			vb.buffer->Release();
-			vb.buffer = nullptr;
-			vb.stride = 0;
-		}
+		vb->Release();
 	}
 
 	ID3D11Buffer* CreateIndexBuffer(UINT* indices, UINT count)
@@ -369,7 +364,6 @@ public:
 		DeviceContext->PSSetShader(SimplePixelShader, nullptr, 0);
 	}
 
-
 	void UpdateModelConstant(FMatrix model)
 	{
 		if (ModelConstantBuffer)
@@ -406,21 +400,6 @@ public:
 		UINT offset = 0;
 		DeviceContext->IASetVertexBuffers(0, 1, &pBuffer, &Stride, &offset);
 		DeviceContext->Draw(numVertices, 0);
-	}
-
-	void Draw(const FVertexBuffer& vb, UINT vertexCount)
-	{
-		UINT offset = 0;
-		DeviceContext->IASetVertexBuffers(0, 1, &vb.buffer, &vb.stride, &offset);
-		DeviceContext->Draw(vertexCount, 0);
-	}
-
-	void DrawIndexed(const FVertexBuffer& vb, ID3D11Buffer* ib, UINT indicesCount)
-	{
-		UINT offset = 0;
-		DeviceContext->IASetVertexBuffers(0, 1, &vb.buffer, &vb.stride, &offset);
-		DeviceContext->IASetIndexBuffer(ib, DXGI_FORMAT_R32_UINT, 0);
-		DeviceContext->DrawIndexed(indicesCount, 0, 0);
 	}
 
 	void SwapBuffer()
