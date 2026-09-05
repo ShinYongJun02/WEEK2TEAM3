@@ -1,20 +1,34 @@
-#pragma once
 #include "UObject.h"
 
-UObject::UObject() : UUID(0), InternalIndex(0) {}
+TArray<UObject*> GUObjectArray;
+
+UObject::UObject() 
+	: UUID(0)
+	, InternalIndex(0) 
+{
+}
 
 UObject::~UObject()
 {
-	if (!GUObjectArray.empty() && !(GUObjectArray[InternalIndex] == this))
+	if (InternalIndex < GUObjectArray.size() && GUObjectArray[InternalIndex] == this)
 	{
 		GUObjectArray[InternalIndex] = GUObjectArray.back();
 		GUObjectArray[InternalIndex]->InternalIndex = InternalIndex;
 		GUObjectArray.pop_back();
-		//GUObjectArray.erase(GUObjectArray.begin() + InternalIndex);
 	}
 };
 
-TArray<UObject*> GUObjectArray;
-//TArray<std::unique_ptr<UObject>> GUObjectArray;
+UObject* UObject::CreateInstance()
+{
+	return NewObject<UObject>();
+}
 
+const UClass* UObject::StaticClass() {
+	static UClass ClassInfo{ "UObject", nullptr, &UObject::CreateInstance };
+	return &ClassInfo;
+}
+
+const UClass* UObject::GetClass() const {
+	return UObject::StaticClass();
+}
 

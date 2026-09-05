@@ -1,6 +1,7 @@
 #pragma once
 
-#include <windows.h>					
+#include <windows.h>
+#include <windowsx.h>
 #include <d3d11.h>						
 #include <d3dcompiler.h>			
 
@@ -44,6 +45,20 @@ using TMap = std::unordered_map<TKey, TValue>;
 
 template <size_t N>
 using FBitSet = std::bitset<N>;
+
+struct FPoint
+{
+	float x;
+	float y;
+};
+
+struct FVector2
+{
+	float x;
+	float y;
+
+	FVector2(float _x = 0, float _y = 0) : x(_x), y(_y) {}
+};
 
 struct FVector
 {
@@ -135,6 +150,16 @@ struct FVector
 	}
 };
 
+inline static float Dot(const FVector& a, const FVector& b)
+{
+	return a.Dot(b);
+}
+
+inline static FVector Cross(const FVector& a, const FVector& b)
+{
+	return a.Cross(b);
+}
+
 struct FVector4
 {
 	float x;
@@ -211,6 +236,15 @@ struct FVector4
 		w *= scalar;
 		return *this;
 	}
+
+	FVector4& operator/=(float scalar)
+	{
+		x /= scalar;
+		y /= scalar;
+		z /= scalar;
+		w /= scalar;
+		return *this;
+	}
 };
 
 struct FMatrix
@@ -285,6 +319,73 @@ struct FMatrix
 		return result;
 	}
 
+	FMatrix GetInverse() const
+	{
+		// Left side: original matrix M, Right side: identity matrix
+		float temp[4][8];
+		for (int32 i = 0; i < 4; i++)
+		{
+			for (int32 j = 0; j < 4; j++)
+			{
+				temp[i][j] = M[i][j];
+				temp[i][j + 4] = (i == j) ? 1.0f : 0.0f;
+			}
+		}
+
+		for (int32 col = 0; col < 4; col++)
+		{
+			// Find the pivot row
+			int32 pivot = col;
+			for (int32 row = col + 1; row < 4; row++)
+			{
+				if (abs(temp[row][col]) > abs(temp[pivot][col]))
+				{
+					pivot = row;
+				}
+			}
+
+			if (abs(temp[pivot][col]) < 1e-6f)
+			{
+				// Matrix is singular, cannot invert
+				return GetIdentity();
+			}
+
+			for (int32 j = 0; j < 8; j++)
+			{
+				std::swap(temp[col][j], temp[pivot][j]);
+			}
+
+			// Normalize the pivot row
+			float divisio = temp[col][col];
+			for (int32 j = 0; j < 8; j++)
+			{
+				temp[col][j] /= divisio;
+			}
+
+			// Eliminate the current column in other rows
+			for (int32 row = 0; row < 4; row++)
+			{
+				if (row == col)
+				{
+					continue;
+				}
+
+				float factor = temp[row][col];
+				for (int32 j = 0; j < 8; j++)
+				{
+					temp[row][j] -= factor * temp[col][j];
+				}
+			}
+		}
+
+		return FMatrix(
+			FVector4(temp[0][4], temp[0][5], temp[0][6], temp[0][7]),
+			FVector4(temp[1][4], temp[1][5], temp[1][6], temp[1][7]),
+			FVector4(temp[2][4], temp[2][5], temp[2][6], temp[2][7]),
+			FVector4(temp[3][4], temp[3][5], temp[3][6], temp[3][7])
+		);
+	}
+
 	static FMatrix GetIdentity()
 	{
 		return FMatrix(
@@ -298,6 +399,44 @@ struct FMatrix
 	{
 
 		return (&M[0][0]);
+	}
+};
+
+inline static FVector4 operator*(const FVector4& vec, const FMatrix& mat)
+{
+	FVector4 result;
+	result.x = vec.x * mat.M[0][0] + vec.y * mat.M[1][0] + vec.z * mat.M[2][0] + vec.w * mat.M[3][0];
+	result.y = vec.x * mat.M[0][1] + vec.y * mat.M[1][1] + vec.z * mat.M[2][1] + vec.w * mat.M[3][1];
+	result.z = vec.x * mat.M[0][2] + vec.y * mat.M[1][2] + vec.z * mat.M[2][2] + vec.w * mat.M[3][2];
+	result.w = vec.x * mat.M[0][3] + vec.y * mat.M[1][3] + vec.z * mat.M[2][3] + vec.w * mat.M[3][3];
+	return result;
+}
+
+struct FRay
+{
+	FVector Origin;
+	FVector Direction;
+
+	FRay() = default;
+
+	FRay(const FVector& InOrigin, const FVector& InDirection)
+		: Origin(InOrigin)
+		, Direction(InDirection)
+	{
+	}
+};
+
+struct FTriangle
+{
+	FVector P0;
+	FVector P1;
+	FVector P2;
+
+	FTriangle(const FVector& InP0, const FVector& InP1, const FVector& InP2)
+		: P0(InP0)
+		, P1(InP1)
+		, P2(InP2)
+	{
 	}
 };
 

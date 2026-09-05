@@ -2,17 +2,14 @@
 #include "UPrimitiveComponent.h"
 #include "FVertex.h"
 
-
-
 class UCubeComp : public UPrimitiveComponent
 {
+	GENERATED_BODY(UCubeComp, UPrimitiveComponent)
+
 public:
-	UCubeComp();
+	UCubeComp() = default;
 
-	UCubeComp(URenderer& Renderer);
+	void Initialize(UResourceManager& ResourceManager);
 
-	~UCubeComp();
-	
-	void setVertexBuffer(URenderer& Renderer);
-
+	bool CheckIntersection(const FRay& Ray) const override;
 };

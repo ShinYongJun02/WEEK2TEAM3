@@ -5,6 +5,8 @@
 
 class USceneComponent : public UObject
 {
+	GENERATED_BODY(USceneComponent, UObject)
+
 public:
 	FVector RelativeLocation;
 	FVector RelativeRotation;

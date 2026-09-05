@@ -1,15 +1,21 @@
 #pragma once
+
+#include "Core.h"
 #include "USceneComponent.h"
+#include "UResourceManager.h"
 #include "URenderer.h"
 #include <wrl.h>
 
 class UPrimitiveComponent : public USceneComponent
 {
+	GENERATED_BODY(UPrimitiveComponent, USceneComponent)
+
 public:
-	Microsoft::WRL::ComPtr<ID3D11Buffer> VertexBuffer = nullptr;
-	uint32 NumVertices = 0;
+	virtual ~UPrimitiveComponent() = default;
 
 	virtual void Render(URenderer& Renderer);
+	virtual bool CheckIntersection(const FRay& Ray) const = 0;
 
-	virtual ~UPrimitiveComponent();
+protected:
+	TSharedPtr<FStaticMesh> StaticMesh = nullptr;
 };

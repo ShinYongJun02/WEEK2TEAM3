@@ -2,16 +2,14 @@
 #include "UPrimitiveComponent.h"
 #include "FVertex.h"
 
-
-
 class USphereComp : public UPrimitiveComponent
 {
+	GENERATED_BODY(USphereComp, UPrimitiveComponent)
+
 public:
-	USphereComp();
+	USphereComp() = default;
 
-	USphereComp(URenderer& Renderer);
-	
-	~USphereComp();
+	void Initialize(UResourceManager& ResourceManager);
 
-	void setVertexBuffer(URenderer& Renderer);
+	bool CheckIntersection(const FRay& Ray) const override;
 };

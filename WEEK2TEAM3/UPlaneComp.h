@@ -3,17 +3,14 @@
 #include "UPrimitiveComponent.h"
 #include "FVertex.h"
 
-
-
 class UPlaneComp : public UPrimitiveComponent
 {
+	GENERATED_BODY(UPlaneComp, UPrimitiveComponent)
+
 public:
-	UPlaneComp();
+	UPlaneComp() = default;
 
-	UPlaneComp(URenderer& Renderer);
+	void Initialize(UResourceManager& ResourceManager);
 
-	~UPlaneComp();
-
-	void setVertexBuffer(URenderer& Renderer);
-
+	bool CheckIntersection(const FRay& Ray) const override;
 };

@@ -3,11 +3,11 @@
 #include "URenderer.h"
 #include "UCamera.h"
 #include "UResourceManager.h"
-
-
+#include "UInputContext.h"
 #include "UCubeComp.h"
 #include "USphereComp.h"
 #include "UPlaneComp.h"
+#include "UObjectAllocator.h"
 
 // 화면 경계
 const float leftBorder = -1.0f;
@@ -17,15 +17,45 @@ const float bottomBorder = -1.0f;
 
 class TWindowEventHandler {
 public:
-	TWindowEventHandler(URenderer& renderer) : Renderer(renderer) {}
+	TWindowEventHandler(URenderer& renderer, UInputContext& inputContext) 
+		: Renderer(renderer)
+		, InputContext(inputContext) 
+	{
+	}
 
-	void HandleResize(UINT width, UINT height)
+	inline void HandleResize(UINT width, UINT height)
 	{
 		Renderer.Resize(width, height);
 	}
 
+	inline void HandleKeyDown(uint64 keyCode)
+	{
+		InputContext.HandleKeyDown(keyCode);
+	}
+
+	inline void HandleKeyUp(uint64 keyCode)
+	{
+		InputContext.HandleKeyUp(keyCode);
+	}
+
+	inline void HandleMouseButtonDown(uint8 buttonIndex)
+	{
+		InputContext.HandleMouseButtonDown(buttonIndex);
+	}
+
+	inline void HandleMouseButtonUp(uint8 buttonIndex)
+	{
+		InputContext.HandleMouseButtonUp(buttonIndex);
+	}
+
+	inline void HandleMouseMove(int32 x, int32 y)
+	{
+		InputContext.HandleMouseMove(x, y);
+	}
+
 private:
 	URenderer& Renderer;
+	UInputContext& InputContext;
 };
 
 void CreateDebugConsole() {
@@ -51,19 +81,36 @@ void CreateDebugConsole() {
 	}
 }
 
-UPrimitiveComponent* SpawnPrimitiveByType(int typeIndex, URenderer& Renderer)
+UPrimitiveComponent* SpawnPrimitiveByType(int typeIndex, UResourceManager& ResourceManager)
 {
+	UPrimitiveComponent* NewPrimitive = nullptr;
+
 	switch (typeIndex)
 	{
 	case 0:
-		return NewObject<UCubeComp>(Renderer);
+		{
+			UCubeComp* cube = (UCubeComp*)FObjectFactory::ConstructObject(UCubeComp::StaticClass());
+			cube->Initialize(ResourceManager);
+			NewPrimitive = cube;
+		}
+		break;
 	case 1:
-		return NewObject<USphereComp>(Renderer);
+		{
+			USphereComp* sphere = (USphereComp*)FObjectFactory::ConstructObject(USphereComp::StaticClass());
+			sphere->Initialize(ResourceManager);
+			NewPrimitive = sphere;
+		}
+		break;
 	case 2:
-		return NewObject<UPlaneComp>(Renderer);
-	default:
-		return nullptr;
+		{
+			UPlaneComp* plane = (UPlaneComp*)FObjectFactory::ConstructObject(UPlaneComp::StaticClass());
+			plane->Initialize(ResourceManager);
+			NewPrimitive = plane;
+		}
+		break;
 	}
+
+	return NewPrimitive;
 }
 
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -89,6 +136,38 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			UINT width = LOWORD(lParam);
 			UINT height = HIWORD(lParam);
 			eventHandler->HandleResize(width, height);
+		}
+		break;
+	case WM_KEYDOWN:
+		if (eventHandler)
+		{
+			eventHandler->HandleKeyDown(wParam);
+		}
+		break;
+	case WM_KEYUP:
+		if (eventHandler)
+		{
+			eventHandler->HandleKeyUp(wParam);
+		}
+		break;
+	case WM_LBUTTONDOWN:
+		if (eventHandler)
+		{
+			eventHandler->HandleMouseButtonDown(0);
+		}
+		break;
+	case WM_LBUTTONUP:
+		if (eventHandler)
+		{
+			eventHandler->HandleMouseButtonUp(0);
+		}
+		break;
+	case WM_MOUSEMOVE:
+		if (eventHandler)
+		{
+			int32 x = GET_X_LPARAM(lParam);
+			int32 y = GET_Y_LPARAM(lParam);
+			eventHandler->HandleMouseMove(x, y);
 		}
 		break;
 	default:
@@ -120,11 +199,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	renderer.CreateShader();
 	renderer.CreateConstantBuffer();
 
-	// Init ResourceManager
+	FUObjectAllocator::Initialize(1024 * 1024 * 100); // 100MB
+
 	UResourceManager resourceManager;
 	resourceManager.Initialize(renderer);
 
-	TWindowEventHandler windowEventHandler(renderer);
+	UInputContext inputContext;
+
+	TWindowEventHandler windowEventHandler(renderer, inputContext);
 
 	SetWindowLongPtrW(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(&windowEventHandler));
 
@@ -237,26 +319,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				{
 					pressed[5] = false;
 				}
-				if (msg.wParam == 'Z')
-				{
-					TrsMode = ImGuizmo::TRANSLATE;
-				}
-				if (msg.wParam == 'X')
-				{
-					TrsMode = ImGuizmo::ROTATE;
-				}
-				if (msg.wParam == 'C')
-				{
-					TrsMode = ImGuizmo::SCALE;
-				}
-				if (msg.wParam == 'V')
-				{
-					WlMode = ImGuizmo::WORLD;
-				}
-				if (msg.wParam == 'B')
-				{
-					WlMode = ImGuizmo::LOCAL;
-				}
 			}
 			else if (msg.message == WM_RBUTTONDOWN)
 			{
@@ -269,6 +331,27 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		}
 
 		float aspectRatio = (float)renderer.GetWidth() / (float)renderer.GetHeight();
+
+		if (inputContext.IsKeyDown('Z'))
+		{
+			TrsMode = ImGuizmo::TRANSLATE;
+		}
+		else if (inputContext.IsKeyDown('X'))
+		{
+			TrsMode = ImGuizmo::ROTATE;
+		}
+		else if (inputContext.IsKeyDown('C'))
+		{
+			TrsMode = ImGuizmo::SCALE;
+		}
+		else if (inputContext.IsKeyDown('V'))
+		{
+			WlMode = ImGuizmo::WORLD;
+		}
+		else if (inputContext.IsKeyDown('B'))
+		{
+			WlMode = ImGuizmo::LOCAL;
+		}
 
 		// 마우스 추적
 		POINT temp;
@@ -288,17 +371,22 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			camera.RelativeRotation += FVector(0.0f, distY, distX) * ((float)elapsedTime / 1000.0f) * cameraSpeed;
 		}
 
+		FMatrix view = camera.GetViewMatrix();
+		FMatrix projection = camera.GetProjectionMatrix(aspectRatio);
+		FMatrix viewProjection = view * projection;
+		FMatrix invViewProjection = viewProjection.GetInverse();
+
 		// Transform
 		renderer.Prepare();
 		renderer.PrepareShader();
 
-		renderer.UpdateViewConstant(camera.GetViewMatrix() * camera.GetProjectionMatrix(renderer.ViewportInfo.Width / renderer.ViewportInfo.Height));
+		renderer.UpdateViewConstant(viewProjection);
 
 		for (UObject* obj : GUObjectArray)
 		{
-			UPrimitiveComponent* prim = dynamic_cast<UPrimitiveComponent*>(obj);
-			if (prim)
+			if (obj->IsA<UPrimitiveComponent>())
 			{
+				UPrimitiveComponent* prim = static_cast<UPrimitiveComponent*>(obj);
 				prim->Render(renderer);
 			}
 		}
@@ -333,6 +421,39 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 		UPrimitiveComponent* SelectedObject;
 
+		int32 mouseX = inputContext.GetMouseX();
+		int32 mouseY = inputContext.GetMouseY();
+
+		float mappedX = Remap(mouseX, 0, renderer.GetWidth(), -1.f, 1.f);
+		float mappedY = -Remap(mouseY, 0, renderer.GetHeight(), -1.f, 1.f);
+
+		FVector4 ndcPos(mappedX, mappedY, 1.0f, 1.0f);
+		FVector4 worldPos = ndcPos * invViewProjection;
+		worldPos /= worldPos.w;
+
+		if (inputContext.IsMouseButtonDown(0)) {
+			FRay ray;
+			ray.Origin = camera.RelativeLocation;
+			ray.Direction = FVector(worldPos.x, worldPos.y, worldPos.z) - camera.RelativeLocation;
+			ray.Direction.Normalize();
+
+			for (int i = 0; i < GUObjectArray.size(); i++)
+			{
+				if (!GUObjectArray[i]->IsA<UPrimitiveComponent>())
+				{
+					continue;
+				}
+
+				SelectedObject = static_cast<UPrimitiveComponent*>(GUObjectArray[i]);
+
+				if (SelectedObject->CheckIntersection(ray))
+				{
+					SelectedObjectIndex = SelectedObject->InternalIndex;
+					break;
+				}
+			}
+		}
+
 		ImGui::Begin("Details Panel");
 		
 		if (SelectedObjectIndex != -1)
@@ -350,7 +471,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		ImGui::End();
 
 		// ImGuizmo
-
 		if (SelectedObjectIndex != -1)
 		{
 			TempObject = GUObjectArray[SelectedObjectIndex];
@@ -386,7 +506,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		ImGui::DragFloat3("Translation", &camera.RelativeLocation.x, 0.1f);
 		ImGui::DragFloat3("Rotation", &camera.RelativeRotation.x, 0.1f);
 		ImGui::DragFloat("fovY", &camera.fovY, 0.1f);
-		ImGui::Text("%d", pressed[6]);
 		ImGui::End();
 
 		ImGui::Begin("Place Actors");
@@ -414,7 +533,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		{
 			for (int i = 0; i < SpawnCount; i++)
 			{
-				SpawnPrimitiveByType(SelectedPrimitiveIndex, renderer);
+				SpawnPrimitiveByType(SelectedPrimitiveIndex, resourceManager);
 			}
 		}
 
@@ -426,18 +545,25 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		{
 			if (SelectedObjectIndex >= 0 && SelectedObjectIndex < (int32)GUObjectArray.size())
 			{
-				delete GUObjectArray[SelectedObjectIndex];
+				DeleteObject(GUObjectArray[SelectedObjectIndex]);
 				SelectedObjectIndex = -1;
 			}
 		}
 		ImGui::End();
 
+		ImGui::Begin("Program Properties");
+		ImGui::Text("Heap Size: %zu bytes", FUObjectAllocator::GetHeapSize());
+		ImGui::Text("Total Allocation Bytes: %u bytes", FUObjectAllocator::GetTotalAllocationBytes());
+		ImGui::Text("Total Allocation Count: %u", FUObjectAllocator::GetTotalAllocationCount());
+		ImGui::End();
 
 		ImGui::Render();
 		ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
 		// 그리기 명령 실행
 		renderer.SwapBuffer();
+
+		inputContext.Update();
 
 		do
 		{
@@ -449,11 +575,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		} while (elapsedTime < targetFrameTime);
 	}
 
+	resourceManager.Release();
+
+	FUObjectAllocator::Release();
+
 	ImGui_ImplDX11_Shutdown();	//ImGui 리소스 해제
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
-
-	resourceManager.Release();
 
 	// 렌더러 리소스 해제
 	renderer.ReleaseConstantBuffer();

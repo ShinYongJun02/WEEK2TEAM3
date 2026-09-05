@@ -1,24 +1,37 @@
-#pragma once
 #include "UCubeComp.h"
+#include "Helper.h"
 
-UCubeComp::UCubeComp()
+void UCubeComp::Initialize(UResourceManager& ResourceManager)
 {
-	NumVertices = CubeVerticesSize;
-	VertexBuffer = nullptr;
+	StaticMesh = ResourceManager.GetStaticMesh("Cube");
 }
 
-UCubeComp::UCubeComp(URenderer& Renderer)
+bool UCubeComp::CheckIntersection(const FRay& Ray) const
 {
-	NumVertices = CubeVerticesSize;
-	VertexBuffer = Renderer.CreateVertexBuffer(CubeVertices, CubeVerticesSize * sizeof(FVertex));
-}
+	FMatrix ModelMatrix = GetModelMatrix();
+	FMatrix InvModelMatrix = ModelMatrix.GetInverse();
 
-UCubeComp::~UCubeComp()
-{
-	;
-}
+	FVector4 LocalRayOrigin = FVector4(Ray.Origin, 1.0f) * InvModelMatrix;
+	FVector4 LocalRayDirection = FVector4(Ray.Direction, 0.0f) * InvModelMatrix;
 
-void UCubeComp::setVertexBuffer(URenderer& Renderer)
-{
-	VertexBuffer = Renderer.CreateVertexBuffer(CubeVertices, CubeVerticesSize * sizeof(FVertex));
+	FRay LocalRay;
+	LocalRay.Origin = FVector(LocalRayOrigin.x, LocalRayOrigin.y, LocalRayOrigin.z);
+	LocalRay.Direction = FVector(LocalRayDirection.x, LocalRayDirection.y, LocalRayDirection.z);
+
+	for (uint32 i = 0; i < StaticMesh->VertexCount; i += 3)
+	{
+		FTriangle Triangle{
+			FVector(CubeVertices[i].x, CubeVertices[i].y, CubeVertices[i].z),
+			FVector(CubeVertices[i + 1].x, CubeVertices[i + 1].y, CubeVertices[i + 1].z),
+			FVector(CubeVertices[i + 2].x, CubeVertices[i + 2].y, CubeVertices[i + 2].z)
+		};
+
+		FVector crossPoint;
+		if (Raycast(LocalRay, Triangle, crossPoint))
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
