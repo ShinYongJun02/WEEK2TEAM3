@@ -58,7 +58,7 @@ public:
 		float ndcX = 2.0f * mouseX / screenWidth - 1.0f;
 		float ndcY = -2.0f * mouseY / screenHeight + 1.0f;
 
-		// (proj^-1)
+		// (proj)
 		float aspect = screenWidth / screenHeight;
 		FMatrix P = GetProjectionMatrix(aspect);
 
