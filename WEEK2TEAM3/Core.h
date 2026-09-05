@@ -93,6 +93,14 @@ struct FVector
 		z *= scalar;
 		return *this;
 	}
+
+	FVector& operator*=(const FVector& rhs)
+	{
+		x *= rhs.x;
+		y *= rhs.y;
+		z *= rhs.z;
+		return *this;
+	}
 };
 
 struct FVector4
@@ -252,5 +260,11 @@ struct FMatrix
 			FVector4(0.0f, 1.0f, 0.0f, 0.0f),
 			FVector4(0.0f, 0.0f, 1.0f, 0.0f),
 			FVector4(0.0f, 0.0f, 0.0f, 1.0f));
+	}
+
+	float* GetFloat16()
+	{
+
+		return (&M[0][0]);
 	}
 };

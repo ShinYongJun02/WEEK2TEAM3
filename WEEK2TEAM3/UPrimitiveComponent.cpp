@@ -5,10 +5,13 @@ void UPrimitiveComponent::Render(URenderer& Renderer)
 {
 	FMatrix model = GetModelMatrix();
 	Renderer.UpdateModelConstant(model);
-	Renderer.RenderPrimitive(VertexBuffer, NumVertices);
+	Renderer.RenderPrimitive(VertexBuffer.Get(), NumVertices);
 }
 
 UPrimitiveComponent::~UPrimitiveComponent()
 {
-	if (VertexBuffer) VertexBuffer->Release();
+	if (VertexBuffer)
+	{
+		VertexBuffer->Release();
+	}
 }

@@ -173,6 +173,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// 종료 시그널
 	bool bIsExit = false;
 
+	ImGuizmo::OPERATION TrsMode = ImGuizmo::TRANSLATE;
+	ImGuizmo::MODE WlMode = ImGuizmo::WORLD;
+
 	while (bIsExit == false)
 	{
 		QueryPerformanceCounter(&startTime);
@@ -242,6 +245,26 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				{
 					pressed[5] = false;
 				}
+				if (msg.wParam == 'Z')
+				{
+					TrsMode = ImGuizmo::TRANSLATE;
+				}
+				if (msg.wParam == 'X')
+				{
+					TrsMode = ImGuizmo::ROTATE;
+				}
+				if (msg.wParam == 'C')
+				{
+					TrsMode = ImGuizmo::SCALE;
+				}
+				if (msg.wParam == 'V')
+				{
+					WlMode = ImGuizmo::WORLD;
+				}
+				if (msg.wParam == 'B')
+				{
+					WlMode = ImGuizmo::LOCAL;
+				}
 			}
 			else if (msg.message == WM_RBUTTONDOWN)
 			{
@@ -291,12 +314,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
 
-		// ImGuizmo
-		ImGuizmo::BeginFrame();
-		ImGuizmo::SetOrthographic(false);
-		ImGuizmo::SetRect(0.0f, 0.0f,
-			renderer.ViewportInfo.Width,
-			renderer.ViewportInfo.Height);
 
 		// ImGui
 
@@ -315,10 +332,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			char label[64];
 			sprintf_s(label, "Object_%u", TempObject->UUID);
 
-			bool isSelected = (SelectedObjectIndex == i);
+			bool isSelected = (SelectedObjectIndex == prim->InternalIndex);
 			if (ImGui::Selectable(label, isSelected))
 			{
-				SelectedObjectIndex = i;
+				SelectedObjectIndex = prim->InternalIndex;
 			}
 		}
 		ImGui::End();
@@ -340,6 +357,42 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		}
 		
 		ImGui::End();
+
+		// ImGuizmo
+
+		if (SelectedObjectIndex != -1)
+		{
+			TempObject = GUObjectArray[SelectedObjectIndex];
+			SelectedObject = dynamic_cast<UPrimitiveComponent*>(TempObject);
+			float DeltaMatrix[16];
+
+			if (SelectedObject)
+			{
+				ImGuizmo::BeginFrame();
+				ImGuizmo::SetOrthographic(false);
+				ImGuizmo::SetRect(0.0f, 0.0f,
+					renderer.ViewportInfo.Width,
+					renderer.ViewportInfo.Height);
+
+				float *ModelFloat = (SelectedObject->GetModelMatrix()).GetFloat16();
+
+				ImGuizmo::Manipulate(camera.GetViewMatrix().GetFloat16(),
+					camera.GetProjectionMatrix(renderer.ViewportInfo.Width / renderer.ViewportInfo.Height).GetFloat16(),
+					TrsMode, WlMode, ModelFloat, DeltaMatrix);
+
+				if (ImGuizmo::IsUsing())
+				{
+					float dt[3], dr[3], ds[3];
+					ImGuizmo::DecomposeMatrixToComponents(DeltaMatrix, dt, dr, ds);
+					//switch(TrsMode):
+
+					SelectedObject->RelativeLocation += FVector(dt[0], dt[1], dt[2]);
+					SelectedObject->RelativeRotation += FVector(dr[0], dr[1], dr[2]);
+					SelectedObject->RelativeScale3D *= FVector(ds[0], ds[1], ds[2]);
+				}
+					
+			}
+		}
 
 		ImGui::Begin("Debug Camera");
 		ImGui::DragFloat3("Translation", &camera.RelativeLocation.x, 0.1f);
@@ -380,6 +433,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		ImGui::SameLine();
 		ImGui::SetNextItemWidth(150);
 		ImGui::SliderInt("Number of spawn", &SpawnCount, 1, 100);
+
+		if (ImGui::Button("Delete", ImVec2(80, 0)))
+		{
+			if (SelectedObjectIndex >= 0 && SelectedObjectIndex < (int32)GUObjectArray.size())
+			{
+				delete GUObjectArray[SelectedObjectIndex];
+				SelectedObjectIndex = -1;
+			}
+		}
 		ImGui::End();
 
 
