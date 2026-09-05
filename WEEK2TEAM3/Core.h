@@ -19,6 +19,8 @@
 
 #define ASSERT(expr) if (!(expr)) { std::cerr << "Assertion failed: " << #expr << std::endl; std::abort(); }
 
+typedef char int8;
+typedef unsigned char uint8;
 typedef int int32;
 typedef unsigned int uint32;
 typedef unsigned long long uint64;
