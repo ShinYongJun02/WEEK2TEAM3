@@ -7,10 +7,11 @@
 class UCamera : public USceneComponent
 {
 public:
-	DECLARE_CLASS(USceneComponent, UObject)
+	DECLARE_CLASS(UCamera, USceneComponent)
 	float nearZ = 0.1f;
 	float farZ = 1000.0f;
 	float fovY = 60.0f;
+	float orthoX = 10.0f;
 	bool isOrthogonal = false;
 
 	// 월드의 UE기준 좌표를 렌더링 전 DX 기준으로 변환
@@ -51,9 +52,21 @@ public:
 			FVector4(0.0f, 0.0f, -nearZ * r, 0.0f));
 	}
 
+	// 카메라 회전, 오브젝트 피킹, W/S 이동 수정 필요.
 	FMatrix GetOrthogonalMatrix(float aspect) const
 	{
-		return FMatrix();
+		float orthoY = orthoX / aspect;
+
+		float width = orthoX;
+		float height = orthoY;
+		float depth = farZ - nearZ;
+
+		return FMatrix(
+			FVector4(2.0f / width, 0.0f, 0.0f, 0.0f),
+			FVector4(0.0f, 2.0f / height, 0.0f, 0.0f),
+			FVector4(0.0f, 0.0f, 1.0f / depth, 0.0f),
+			FVector4(0.0f, 0.0f, -nearZ / depth, 1.0f)
+		);
 	}
 
 	// aspect = width / height

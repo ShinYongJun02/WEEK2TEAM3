@@ -10,12 +10,6 @@
 #include "USphereComp.h"
 #include "UPlaneComp.h"
 
-// 화면 경계
-const float leftBorder = -1.0f;
-const float rightBorder = 1.0f;
-const float topBorder = 1.0f;
-const float bottomBorder = -1.0f;
-
 class TWindowEventHandler {
 public:
 	TWindowEventHandler(URenderer& renderer) : Renderer(renderer) {}
@@ -436,6 +430,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		ImGui::DragFloat3("Translation", &camera.RelativeLocation.x, 0.1f);
 		ImGui::DragFloat3("Rotation", &camera.RelativeRotation.x, 0.1f);
 		ImGui::DragFloat("fovY", &camera.fovY, 0.1f);
+		ImGui::DragFloat("orthoX", &camera.orthoX, 0.1f);
+		ImGui::Checkbox("orthogonal", &camera.isOrthogonal);
 		ImGui::End();
 
 		ImGui::Begin("Place Actors");
