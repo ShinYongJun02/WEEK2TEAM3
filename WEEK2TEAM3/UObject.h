@@ -5,4 +5,5 @@
 class UObject
 {
 public:
+	virtual ~UObject() {};
 };

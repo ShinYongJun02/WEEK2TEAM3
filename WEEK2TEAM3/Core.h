@@ -8,14 +8,20 @@
 #include "ImGui/imgui_internal.h"		
 #include "ImGui/imgui_impl_dx11.h"		
 #include "ImGui/imgui_impl_win32.h"		
+#include "ImGui/ImGuizmo.h"
 
 #include <cmath>
 #include <iostream>
 #include <vector>
 #include <map>
+#include <unordered_map>
+#include <bitset>
+
+#define ASSERT(expr) if (!(expr)) { std::cerr << "Assertion failed: " << #expr << std::endl; std::abort(); }
 
 typedef int int32;
 typedef unsigned int uint32;
+typedef unsigned long long uint64;
 
 template <typename T>
 using TArray = std::vector<T>;
@@ -32,7 +38,10 @@ TSharedPtr<T> MakeShared(Args&&... args)
 using FString = std::string;
 
 template <typename TKey, typename TValue>
-using TMap = std::map<TKey, TValue>;
+using TMap = std::unordered_map<TKey, TValue>;
+
+template <size_t N>
+using FBitSet = std::bitset<N>;
 
 struct FVector
 {

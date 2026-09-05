@@ -140,6 +140,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	// UI Property
 	int32 selectedPrimitiveType = 0;
+	const ImGuizmo::OPERATION gizmoOperations[] = { ImGuizmo::TRANSLATE, ImGuizmo::ROTATE, ImGuizmo::SCALE };
+	int32 selectedGizmoOperationIndex = 0;
+	ImGuizmo::MODE selectedGizmoMode = ImGuizmo::WORLD;
 
 	TArray<TSharedPtr<UPrimitiveComponent>> primitiveComponents;
 	TSharedPtr<UPrimitiveComponent> selectedComponent = nullptr;
@@ -224,6 +227,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			}
 		}
 
+		float aspectRatio = (float)renderer.GetWidth() / (float)renderer.GetHeight();
+
 		// 마우스 추적
 		POINT temp;
 		GetCursorPos(&temp);          // 화면 좌표
@@ -233,7 +238,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		pt = temp;
 
 		// 카메라 무빙 (카메라 z축 회전 = 오른쪽 보기, 카메라 y축 회전 = 아래 보기
-		camera.RelativeLocation += FVector(pressed[0] - pressed[1], pressed[2] - pressed[3], pressed[4] - pressed[5]) * ((float)elapsedTime / 1000.0f);
+		camera.RelativeLocation += (
+			camera.GetForward() * (pressed[0] - pressed[1]) +
+			camera.GetRight() * (pressed[2] - pressed[3]) +
+			camera.GetUp() * (pressed[4] - pressed[5])) * ((float)elapsedTime / 1000.0f);
 		if (pressed[6])
 		{
 			camera.RelativeRotation += FVector(0.0f, distY, distX) * ((float)elapsedTime / 1000.0f) * cameraSpeed;
@@ -243,7 +251,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		renderer.Prepare();
 		renderer.PrepareShader();
 
-		renderer.UpdateViewConstant(camera.GetViewMatrix() * camera.GetProjectionMatrix(renderer.ViewportInfo.Width / renderer.ViewportInfo.Height));
+		renderer.UpdateViewConstant(camera.GetViewMatrix() * camera.GetProjectionMatrix(aspectRatio));
 
 		for (int i = 0; i < primitiveComponents.size(); i++)
 		{
@@ -253,6 +261,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		ImGui_ImplDX11_NewFrame();
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
+		ImGuizmo::BeginFrame();
 
 		// ImGui
 		{
@@ -326,6 +335,35 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			}
 
 			ImGui::End();
+		}
+
+		{
+			if (selectedComponent)
+			{
+				//ImGuizmo::OPERATION gizmoOperation = gizmoOperations[selectedGizmoOperationIndex];
+				ImGuizmo::OPERATION gizmoOperation = ImGuizmo::OPERATION::ROTATE;
+
+				FMatrix model = selectedComponent->GetModelMatrix();
+				FMatrix view = camera.GetViewMatrix();
+				FMatrix projection = camera.GetProjectionMatrix(aspectRatio);
+
+				ImGuizmo::SetOrthographic(false);
+				ImGuizmo::SetRect(0.0f, 0.0f, renderer.GetWidth(), renderer.GetHeight());
+				ImGuizmo::Manipulate(view.M[0], projection.M[0], gizmoOperation, selectedGizmoMode, model.M[0], NULL, NULL);
+
+				if (ImGuizmo::IsUsing())
+				{
+					float translation[3];
+					float rotation[3];
+					float scale[3];
+
+					ImGuizmo::DecomposeMatrixToComponents(model.M[0], translation, rotation, scale);
+
+					selectedComponent->RelativeLocation = FVector(translation[0], translation[1], translation[2]);
+					selectedComponent->RelativeRotation = FVector(-rotation[0], -rotation[1], rotation[2]);
+					selectedComponent->RelativeScale3D = FVector(scale[0], scale[1], scale[2]);
+				}
+			}
 		}
 
 		ImGui::Render();
