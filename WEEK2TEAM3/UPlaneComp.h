@@ -10,14 +10,7 @@ class UPlaneComp : public UPrimitiveComponent
 	float halfY = 1.0f;
 
 public:
-	DECLARE_CLASS(USceneComponent, UObject)
-	UPlaneComp();
-
-	UPlaneComp(URenderer& Renderer);
-
-	~UPlaneComp();
-
-	void setVertexBuffer(URenderer& Renderer);
+	DECLARE_CLASS(UPlaneComp, UPrimitiveComponent)
 
 	virtual bool IntersectLocal(const FRay& localRay, float& outT) const
 	{

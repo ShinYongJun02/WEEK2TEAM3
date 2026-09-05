@@ -1,25 +1,3 @@
-#pragma once
 #include "UPlaneComp.h"
 
-
-UPlaneComp::UPlaneComp()
-{
-	NumVertices = PlaneVerticesSize;
-	VertexBuffer = nullptr;
-}
-
-UPlaneComp::UPlaneComp(URenderer& Renderer)
-{
-	NumVertices = PlaneVerticesSize;
-	VertexBuffer = Renderer.CreateVertexBuffer(PlaneVertices, PlaneVerticesSize * sizeof(FVertex));
-}
-
-UPlaneComp::~UPlaneComp()
-{
-	;
-}
-
-void UPlaneComp::setVertexBuffer(URenderer& Renderer)
-{
-	VertexBuffer = Renderer.CreateVertexBuffer(PlaneVertices, PlaneVerticesSize * sizeof(FVertex));
-}
+// 버텍스 버퍼는 UResourceManager 가 "Plane" 키로 하나만 만들어 공유한다.

@@ -1,24 +1,3 @@
-#pragma once
 #include "UCubeComp.h"
 
-UCubeComp::UCubeComp()
-{
-	NumVertices = CubeVerticesSize;
-	VertexBuffer = nullptr;
-}
-
-UCubeComp::UCubeComp(URenderer& Renderer)
-{
-	NumVertices = CubeVerticesSize;
-	VertexBuffer = Renderer.CreateVertexBuffer(CubeVertices, CubeVerticesSize * sizeof(FVertex));
-}
-
-UCubeComp::~UCubeComp()
-{
-	;
-}
-
-void UCubeComp::setVertexBuffer(URenderer& Renderer)
-{
-	VertexBuffer = Renderer.CreateVertexBuffer(CubeVertices, CubeVerticesSize * sizeof(FVertex));
-}
+// 버텍스 버퍼는 UResourceManager 가 "Cube" 키로 하나만 만들어 공유한다.

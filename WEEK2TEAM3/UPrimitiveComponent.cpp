@@ -1,17 +1,13 @@
-#pragma once
 #include "UPrimitiveComponent.h"
 
 void UPrimitiveComponent::Render(URenderer& Renderer)
 {
+	if (!StaticMesh || StaticMesh->VertexBuffer == nullptr)
+	{
+		return;
+	}
+
 	FMatrix model = GetModelMatrix();
 	Renderer.UpdateModelConstant(model);
-	Renderer.RenderPrimitive(VertexBuffer.Get(), NumVertices);
-}
-
-UPrimitiveComponent::~UPrimitiveComponent()
-{
-	if (VertexBuffer)
-	{
-		VertexBuffer->Release();
-	}
+	Renderer.RenderPrimitive(StaticMesh->VertexBuffer, StaticMesh->VertexCount);
 }

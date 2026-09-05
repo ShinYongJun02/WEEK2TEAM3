@@ -8,14 +8,7 @@ class USphereComp : public UPrimitiveComponent
 	float radius = 0.5f;
 
 public:
-	DECLARE_CLASS(USceneComponent, UObject)
-	USphereComp();
-
-	USphereComp(URenderer& Renderer);
-
-	~USphereComp();
-
-	void setVertexBuffer(URenderer& Renderer);
+	DECLARE_CLASS(USphereComp, UPrimitiveComponent)
 
 	virtual bool IntersectLocal(const FRay& localRay, float& outT) const
 	{

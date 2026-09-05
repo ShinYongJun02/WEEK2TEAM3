@@ -1,25 +1,3 @@
-#pragma once
 #include "USphereComp.h"
 
-
-USphereComp::USphereComp()
-{
-	NumVertices = SphereVerticesSize;
-	VertexBuffer = nullptr;
-}
-
-USphereComp::USphereComp(URenderer& Renderer)
-{
-	NumVertices = SphereVerticesSize;
-	VertexBuffer = Renderer.CreateVertexBuffer(SphereVertices, SphereVerticesSize * sizeof(FVertex));
-}
-
-USphereComp::~USphereComp()
-{
-	;
-}
-
-void USphereComp::setVertexBuffer(URenderer& Renderer)
-{
-	VertexBuffer = Renderer.CreateVertexBuffer(SphereVertices, SphereVerticesSize * sizeof(FVertex));
-}
+// 버텍스 버퍼는 UResourceManager 가 "Sphere" 키로 하나만 만들어 공유한다.

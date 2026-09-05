@@ -52,19 +52,38 @@ void CreateDebugConsole() {
 	}
 }
 
-UPrimitiveComponent* SpawnPrimitiveByType(int typeIndex, URenderer& Renderer)
+UPrimitiveComponent* SpawnPrimitiveByType(int typeIndex, UResourceManager& ResourceManager)
 {
+	UPrimitiveComponent* Comp = nullptr;
+	FString MeshKey;
+
 	switch (typeIndex)
 	{
 	case 0:
-		return dynamic_cast<UPrimitiveComponent*>(NewObject(UCubeComp::StaticClass()));
+		Comp = dynamic_cast<UPrimitiveComponent*>(NewObject(UCubeComp::StaticClass()));
+		MeshKey = "Cube";
+		break;
 	case 1:
-		return dynamic_cast<UPrimitiveComponent*>(NewObject(USphereComp::StaticClass()));
+		Comp = dynamic_cast<UPrimitiveComponent*>(NewObject(USphereComp::StaticClass()));
+		MeshKey = "Sphere";
+		break;
 	case 2:
-		return dynamic_cast<UPrimitiveComponent*>(NewObject(UPlaneComp::StaticClass()));
+		Comp = dynamic_cast<UPrimitiveComponent*>(NewObject(UPlaneComp::StaticClass()));
+		MeshKey = "Plane";
+		break;
 	default:
 		return nullptr;
 	}
+
+	if (Comp == nullptr)
+	{
+		return nullptr;
+	}
+
+	// 종류마다 하나뿐인 메시를 공유 참조한다. 새로 만들지 않는다.
+	Comp->StaticMesh = ResourceManager.GetStaticMesh(MeshKey);
+
+	return Comp;
 }
 
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -444,7 +463,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		{
 			for (int i = 0; i < SpawnCount; i++)
 			{
-				SpawnPrimitiveByType(SelectedPrimitiveIndex, renderer);
+				SpawnPrimitiveByType(SelectedPrimitiveIndex, resourceManager);
 			}
 		}
 

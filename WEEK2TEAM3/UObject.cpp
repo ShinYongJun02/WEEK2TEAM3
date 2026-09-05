@@ -29,5 +29,47 @@ UClass* UObject::StaticClass()
 	return &Instance;
 }
 
+void* UObject::operator new(size_t Size)
+{
+	UEngineStatics::TotalAllocationBytes += static_cast<uint32>(Size);
+	++UEngineStatics::TotalAllocationCount;
+
+	return ::operator new(Size);
+}
+
+void UObject::operator delete(void* Ptr, size_t Size)
+{
+	if (Ptr == nullptr)
+	{
+		return;
+	}
+
+	UEngineStatics::TotalAllocationBytes -= static_cast<uint32>(Size);
+	--UEngineStatics::TotalAllocationCount;
+
+	::operator delete(Ptr);
+}
+
+void* UObject::operator new[](size_t Size)
+{
+	UEngineStatics::TotalAllocationBytes += static_cast<uint32>(Size);
+	++UEngineStatics::TotalAllocationCount;
+
+	return ::operator new[](Size);
+}
+
+void UObject::operator delete[](void* Ptr, size_t Size)
+{
+	if (Ptr == nullptr)
+	{
+		return;
+	}
+
+	UEngineStatics::TotalAllocationBytes -= static_cast<uint32>(Size);
+	--UEngineStatics::TotalAllocationCount;
+
+	::operator delete[](Ptr);
+}
+
 TArray<UObject*> GUObjectArray;
 //TArray<std::unique_ptr<UObject>> GUObjectArray;

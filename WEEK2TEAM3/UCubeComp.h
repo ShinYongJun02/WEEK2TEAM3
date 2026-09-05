@@ -11,14 +11,7 @@ class UCubeComp : public UPrimitiveComponent
 	float halfZ = 0.5f;
 
 public:
-	DECLARE_CLASS(USceneComponent, UObject)
-	UCubeComp();
-
-	UCubeComp(URenderer& Renderer);
-
-	~UCubeComp();
-
-	void setVertexBuffer(URenderer& Renderer);
+	DECLARE_CLASS(UCubeComp, UPrimitiveComponent)
 
 	virtual bool IntersectLocal(const FRay& localRay, float& outT) const
 	{
