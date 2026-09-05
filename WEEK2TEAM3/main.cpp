@@ -318,7 +318,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		// Transform
 		renderer.Prepare();
 		renderer.PrepareShader();
-
 		renderer.UpdateViewConstant(camera.GetViewMatrix() * camera.GetProjectionMatrix(renderer.ViewportInfo.Width / renderer.ViewportInfo.Height));
 
 		for (UObject* obj : GUObjectArray)
