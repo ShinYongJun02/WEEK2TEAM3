@@ -3,7 +3,6 @@
 #include "URenderer.h"
 #include <wrl.h>
 
-
 class UPrimitiveComponent : public USceneComponent
 {
 public:

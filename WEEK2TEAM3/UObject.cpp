@@ -14,8 +14,6 @@ UObject::~UObject()
 	}
 };
 
-uint32 UEngineStatics::NextUUID = 0;
-
 TArray<UObject*> GUObjectArray;
 //TArray<std::unique_ptr<UObject>> GUObjectArray;
 

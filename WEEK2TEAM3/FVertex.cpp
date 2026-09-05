@@ -2,7 +2,7 @@
 
 #include "Core.h"
 
-FVertexSimple plane_vertices[] =
+FVertex PlaneVertices[] =
 {
 	{ -1.0f, -1.0f, 0.0f,  1.0f, 0.0f, 0.0f, 1.0f },
 	{  1.0f,  1.0f, 0.0f,  0.0f, 0.0f, 1.0f, 1.0f },

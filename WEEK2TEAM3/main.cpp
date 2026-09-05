@@ -2,7 +2,6 @@
 #include "FVertex.h"
 #include "URenderer.h"
 #include "UCamera.h"
-#include "UPrimitvieComponent.h"
 #include "UResourceManager.h"
 
 
@@ -304,19 +303,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			}
 		}
 
-		for (int i = 0; i < primitiveComponents.size(); i++)
-		{
-			primitiveComponents[i]->Render(renderer);
-		}
-
 		ImGui_ImplDX11_NewFrame();
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
-
+		ImGuizmo::BeginFrame();
 
 		// ImGui
-
-
 		ImGui::Begin("Outliner");
 		
 		UObject* TempObject;
@@ -329,7 +321,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			if (!prim) continue;
 
 			char label[64];
-			sprintf_s(label, "Object_%u", TempObject->UUID);
+			sprintf_s(label, "Object_%d%d%d%d", TempObject->UUID.A, TempObject->UUID.B, TempObject->UUID.C, TempObject->UUID.D);
 
 			bool isSelected = (SelectedObjectIndex == prim->InternalIndex);
 			if (ImGui::Selectable(label, isSelected))
@@ -363,33 +355,30 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		{
 			TempObject = GUObjectArray[SelectedObjectIndex];
 			SelectedObject = dynamic_cast<UPrimitiveComponent*>(TempObject);
-			float DeltaMatrix[16];
+			FMatrix Mat = SelectedObject->GetModelMatrix();
 
 			if (SelectedObject)
 			{
-				ImGuizmo::BeginFrame();
+				FMatrix model = SelectedObject->GetModelMatrix();
+				FMatrix view = camera.GetViewMatrix();
+				FMatrix projection = camera.GetProjectionMatrix(aspectRatio);
+
 				ImGuizmo::SetOrthographic(false);
-				ImGuizmo::SetRect(0.0f, 0.0f,
-					renderer.ViewportInfo.Width,
-					renderer.ViewportInfo.Height);
-
-				float *ModelFloat = (SelectedObject->GetModelMatrix()).GetFloat16();
-
-				ImGuizmo::Manipulate(camera.GetViewMatrix().GetFloat16(),
-					camera.GetProjectionMatrix(renderer.ViewportInfo.Width / renderer.ViewportInfo.Height).GetFloat16(),
-					TrsMode, WlMode, ModelFloat, DeltaMatrix);
+				ImGuizmo::SetRect(0.0f, 0.0f, renderer.GetWidth(), renderer.GetHeight());
+				ImGuizmo::Manipulate(view.M[0], projection.M[0], TrsMode, WlMode, model.M[0], NULL, NULL);
 
 				if (ImGuizmo::IsUsing())
 				{
-					float dt[3], dr[3], ds[3];
-					ImGuizmo::DecomposeMatrixToComponents(DeltaMatrix, dt, dr, ds);
-					//switch(TrsMode):
+					float translation[3];
+					float rotation[3];
+					float scale[3];
 
-					SelectedObject->RelativeLocation += FVector(dt[0], dt[1], dt[2]);
-					SelectedObject->RelativeRotation += FVector(dr[0], dr[1], dr[2]);
-					SelectedObject->RelativeScale3D *= FVector(ds[0], ds[1], ds[2]);
+					ImGuizmo::DecomposeMatrixToComponents(model.M[0], translation, rotation, scale);
+
+					SelectedObject->RelativeLocation = FVector(translation[0], translation[1], translation[2]);
+					SelectedObject->RelativeRotation = FVector(-rotation[0], -rotation[1], rotation[2]);
+					SelectedObject->RelativeScale3D = FVector(scale[0], scale[1], scale[2]);
 				}
-					
 			}
 		}
 

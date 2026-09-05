@@ -1,6 +1,6 @@
 #pragma once
-#include "Types.h"
 
+#include "Types.h"
 #include "Core.h"
 
 struct FUUID
@@ -36,5 +36,5 @@ public:
 	}
 
 private:
-	static FUUID NextUUID;
+	inline static uint32 NextUUID = 0;
 };
