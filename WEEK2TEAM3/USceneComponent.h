@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Core.h"
 #include "UObject.h"
 #include "Helper.h"
 

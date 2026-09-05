@@ -1,6 +1,8 @@
 #include "FVertex.h"
 
-FVertex PlaneVertices[] =
+#include "Core.h"
+
+FVertexSimple plane_vertices[] =
 {
 	{ -1.0f, -1.0f, 0.0f,  1.0f, 0.0f, 0.0f, 1.0f },
 	{  1.0f,  1.0f, 0.0f,  0.0f, 0.0f, 1.0f, 1.0f },

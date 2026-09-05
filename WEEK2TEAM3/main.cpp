@@ -2,7 +2,8 @@
 #include "FVertex.h"
 #include "URenderer.h"
 #include "UCamera.h"
-#include "USceneComponent.h"
+#include "UPrimitvieComponent.h"
+#include "UResourceManager.h"
 
 
 #include "UCubeComp.h"
@@ -120,6 +121,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	renderer.CreateShader();
 	renderer.CreateConstantBuffer();
 
+	// Init ResourceManager
+	UResourceManager resourceManager;
+	resourceManager.Initialize(renderer);
+
 	TWindowEventHandler windowEventHandler(renderer);
 
 	SetWindowLongPtrW(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(&windowEventHandler));
@@ -138,18 +143,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	QueryPerformanceFrequency(&frequency);
 	LARGE_INTEGER startTime, endTime;
 	double elapsedTime = 0.0;
-
-	UCubeComp* cube = NewObject<UCubeComp>();
-	cube->setVertexBuffer(renderer);
-
-	USphereComp* sphere = NewObject<USphereComp>();
-	sphere->setVertexBuffer(renderer);
-
-	sphere->RelativeLocation = FVector(5.0f, 5.0f, 1.0f);
-
-	UPlaneComp* plane = NewObject<UPlaneComp>();
-	plane->setVertexBuffer(renderer);
-	plane->RelativeLocation = FVector(-5.0f, -5.0f, 1.0f);
 
 	// 카메라
 	UCamera camera;
@@ -276,6 +269,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			}
 		}
 
+		float aspectRatio = (float)renderer.GetWidth() / (float)renderer.GetHeight();
+
 		// 마우스 추적
 		POINT temp;
 		GetCursorPos(&temp);          // 화면 좌표
@@ -295,7 +290,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		}
 
 		// Transform
-
 		renderer.Prepare();
 		renderer.PrepareShader();
 
@@ -308,6 +302,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			{
 				prim->Render(renderer);
 			}
+		}
+
+		for (int i = 0; i < primitiveComponents.size(); i++)
+		{
+			primitiveComponents[i]->Render(renderer);
 		}
 
 		ImGui_ImplDX11_NewFrame();
@@ -461,11 +460,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		} while (elapsedTime < targetFrameTime);
 	}
 
-	//renderer.ReleaseVertexBuffer(vertexBufferCube);
-
 	ImGui_ImplDX11_Shutdown();	//ImGui 리소스 해제
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
+
+	resourceManager.Release();
 
 	// 렌더러 리소스 해제
 	renderer.ReleaseConstantBuffer();

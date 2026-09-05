@@ -12,6 +12,38 @@
 
 #include <cmath>
 #include <iostream>
+#include <vector>
+#include <map>
+#include <unordered_map>
+#include <bitset>
+
+#define ASSERT(expr) if (!(expr)) { std::cerr << "Assertion failed: " << #expr << std::endl; std::abort(); }
+
+typedef char int8;
+typedef unsigned char uint8;
+typedef int int32;
+typedef unsigned int uint32;
+typedef unsigned long long uint64;
+
+template <typename T>
+using TArray = std::vector<T>;
+
+template <typename T>
+using TSharedPtr = std::shared_ptr<T>;
+
+template <typename T, typename... Args>
+TSharedPtr<T> MakeShared(Args&&... args)
+{
+	return std::make_shared<T>(std::forward<Args>(args)...);
+}
+
+using FString = std::string;
+
+template <typename TKey, typename TValue>
+using TMap = std::unordered_map<TKey, TValue>;
+
+template <size_t N>
+using FBitSet = std::bitset<N>;
 
 struct FVector
 {
@@ -268,3 +300,12 @@ struct FMatrix
 		return (&M[0][0]);
 	}
 };
+
+static const FVector Front = FVector(1.0f, 0.0f, 0.0f);
+
+struct FVertexSimple
+{
+	float x, y, z;    // Position
+	float r, g, b, a; // Color
+};
+

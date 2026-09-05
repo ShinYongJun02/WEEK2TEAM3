@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cmath>
-
 #include "Core.h"
 #include "FVertex.h"
 
