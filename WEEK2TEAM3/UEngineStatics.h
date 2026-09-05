@@ -34,6 +34,8 @@ public:
 
 		return result;
 	}
+	inline static uint32 TotalAllocationBytes = 0;
+	inline static uint32 TotalAllocationCount = 0;
 
 private:
 	inline static uint32 NextUUID = 0;

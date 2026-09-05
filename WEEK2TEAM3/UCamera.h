@@ -7,12 +7,14 @@
 class UCamera : public USceneComponent
 {
 public:
+	DECLARE_CLASS(USceneComponent, UObject)
 	float nearZ = 0.1f;
 	float farZ = 1000.0f;
 	float fovY = 60.0f;
+	bool isOrthogonal = false;
 
 	// 월드의 UE기준 좌표를 렌더링 전 DX 기준으로 변환
-	FMatrix GetUEtoDXAxisSwap()
+	FMatrix GetUEtoDXAxisSwap() const
 	{
 		return FMatrix(
 			FVector4(0.0f, 0.0f, 1.0f, 0.0f),   // UE.X(전방) -> DX.Z
@@ -21,7 +23,7 @@ public:
 			FVector4(0.0f, 0.0f, 0.0f, 1.0f));
 	}
 
-	FMatrix GetViewMatrix()
+	FMatrix GetViewMatrix() const
 	{
 		// 뷰 행렬
 		// = 카메라를 원점으로 이동시키는 행렬(=카메라의 이동행렬의 역행렬) * 카메라를 월드좌표계에 일치시키는 회전행렬(=카메라 회전행렬의 역행렬)
@@ -35,8 +37,7 @@ public:
 		return ViewMatrix;
 	}
 
-	// aspect = width / height
-	FMatrix GetProjectionMatrix(float aspect)
+	FMatrix GetPerspectiveMatrix(float aspect) const
 	{
 		float radian = DegreeToRadian(fovY);
 		float scaleY = 1.0f / tan(radian / 2);
@@ -50,7 +51,19 @@ public:
 			FVector4(0.0f, 0.0f, -nearZ * r, 0.0f));
 	}
 
-	FRay GetRayFromScreen(float mouseX, float mouseY, float screenWidth, float screenHeight)
+	FMatrix GetOrthogonalMatrix(float aspect) const
+	{
+		return FMatrix();
+	}
+
+	// aspect = width / height
+	FMatrix GetProjectionMatrix(float aspect) const
+	{
+		if (isOrthogonal) return GetOrthogonalMatrix(aspect);
+		return GetPerspectiveMatrix(aspect);
+	}
+
+	FRay GetRayFromScreen(float mouseX, float mouseY, float screenWidth, float screenHeight) const
 	{
 		// world = NDC * (proj^-1) * (view^-1)
 

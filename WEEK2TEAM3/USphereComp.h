@@ -8,6 +8,7 @@ class USphereComp : public UPrimitiveComponent
 	float radius = 0.5f;
 
 public:
+	DECLARE_CLASS(USceneComponent, UObject)
 	USphereComp();
 
 	USphereComp(URenderer& Renderer);

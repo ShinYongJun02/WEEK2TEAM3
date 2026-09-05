@@ -6,6 +6,7 @@
 class UPrimitiveComponent : public USceneComponent
 {
 public:
+	DECLARE_CLASS(USceneComponent, UObject)
 	Microsoft::WRL::ComPtr<ID3D11Buffer> VertexBuffer = nullptr;
 	uint32 NumVertices = 0;
 

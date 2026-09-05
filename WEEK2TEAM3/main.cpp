@@ -57,11 +57,11 @@ UPrimitiveComponent* SpawnPrimitiveByType(int typeIndex, URenderer& Renderer)
 	switch (typeIndex)
 	{
 	case 0:
-		return NewObject<UCubeComp>(Renderer);
+		return dynamic_cast<UPrimitiveComponent*>(NewObject(UCubeComp::StaticClass()));
 	case 1:
-		return NewObject<USphereComp>(Renderer);
+		return dynamic_cast<UPrimitiveComponent*>(NewObject(USphereComp::StaticClass()));
 	case 2:
-		return NewObject<UPlaneComp>(Renderer);
+		return dynamic_cast<UPrimitiveComponent*>(NewObject(UPlaneComp::StaticClass()));
 	default:
 		return nullptr;
 	}
@@ -409,6 +409,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			}
 		}
 
+		ImGui::Begin("Engine Statics");
+		ImGui::Text("TotalAllocationBytes: %d", UEngineStatics::TotalAllocationBytes);
+		ImGui::Text("TotalAllocationCount: %d", UEngineStatics::TotalAllocationCount);
+		ImGui::End();
+
 		ImGui::Begin("Debug Camera");
 		ImGui::DragFloat3("Translation", &camera.RelativeLocation.x, 0.1f);
 		ImGui::DragFloat3("Rotation", &camera.RelativeRotation.x, 0.1f);
@@ -457,7 +462,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			}
 		}
 		ImGui::End();
-
 
 		ImGui::Render();
 		ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());

@@ -11,6 +11,7 @@ class UCubeComp : public UPrimitiveComponent
 	float halfZ = 0.5f;
 
 public:
+	DECLARE_CLASS(USceneComponent, UObject)
 	UCubeComp();
 
 	UCubeComp(URenderer& Renderer);

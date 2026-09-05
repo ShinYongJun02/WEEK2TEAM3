@@ -10,6 +10,7 @@ class UPlaneComp : public UPrimitiveComponent
 	float halfY = 1.0f;
 
 public:
+	DECLARE_CLASS(USceneComponent, UObject)
 	UPlaneComp();
 
 	UPlaneComp(URenderer& Renderer);

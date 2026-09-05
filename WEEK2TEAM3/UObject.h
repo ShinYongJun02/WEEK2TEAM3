@@ -2,23 +2,35 @@
 
 #include "Core.h"
 #include "UEngineStatics.h"
+#include "UClass.h"
+
+#define DECLARE_CLASS(ClassName, ParentClass) \
+    static UClass* StaticClass() { \
+        static UClass Instance(#ClassName, ParentClass::StaticClass(), \
+			&ConstructUObject<ClassName>); \
+        return &Instance; \
+    } \
+	virtual UClass* GetClass() const override { return ClassName::StaticClass(); }
 
 class UObject
 {
-	public:
+public:
 	FUUID UUID;
 	uint32 InternalIndex;
-public:
+
 	UObject();
 	virtual ~UObject();
+
+	bool IsA(UClass* c) const;
+	virtual UClass* GetClass() const;
+	static UClass* StaticClass();
 };
 
 extern TArray<UObject*> GUObjectArray;
 
-template<typename T, typename... Args>
-T* NewObject(Args&&... args)
+inline UObject* NewObject(UClass* type)
 {
-	T* obj = new T(std::forward<Args>(args)...);
+	UObject* obj = type->GetConstructor()();
 	obj->UUID = UEngineStatics::GetUUID();
 	obj->InternalIndex = (uint32)GUObjectArray.size();
 	GUObjectArray.push_back(obj);
