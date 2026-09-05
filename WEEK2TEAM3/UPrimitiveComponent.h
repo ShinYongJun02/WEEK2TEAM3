@@ -12,4 +12,17 @@ public:
 	virtual void Render(URenderer& Renderer);
 
 	virtual ~UPrimitiveComponent();
+
+	bool RayIntersects(const FRay& worldRay, float& outT) const
+	{
+		FMatrix inv = GetModelInverseMatrix();
+
+		FRay local;
+		local.Origin = (FVector4(worldRay.Origin, 1.0f) * inv).Vector3();
+		local.Direction = (FVector4(worldRay.Direction, 0.0f) * inv).Vector3();
+
+		return IntersectLocal(local, outT);
+	}
+
+	virtual bool IntersectLocal(const FRay& localRay, float& outT) const { return false; };
 };

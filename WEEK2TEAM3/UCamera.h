@@ -50,8 +50,30 @@ public:
 			FVector4(0.0f, 0.0f, -nearZ * r, 0.0f));
 	}
 
-	/*FMatrix GetInverse()
+	FRay GetRayFromScreen(float mouseX, float mouseY, float screenWidth, float screenHeight)
 	{
+		// world = NDC * (proj^-1) * (view^-1)
 
-	}*/
+		// screen -> NDC
+		float ndcX = 2.0f * mouseX / screenWidth - 1.0f;
+		float ndcY = -2.0f * mouseY / screenHeight + 1.0f;
+
+		// (proj^-1)
+		float aspect = screenWidth / screenHeight;
+		FMatrix P = GetProjectionMatrix(aspect);
+
+		// (far - near) 방향 벡터
+		FVector4 dirView(ndcX / P.M[0][0], ndcY / P.M[1][1], 1.0f);
+
+		// (view^-1) (회전부)
+		FMatrix viewInvRot = GetUEtoDXAxisSwap().GetTranspose() * GetRotationMatrix();
+
+		// Ray
+		FRay ray;
+		ray.Origin = RelativeLocation;
+		ray.Direction = (dirView * viewInvRot).Vector3();
+		ray.Direction.Normalize();
+
+		return ray;
+	}
 };

@@ -76,6 +76,31 @@ public:
 		return GetScaleMatrix() * GetRotationMatrix() * GetTranslationMatrix();
 	}
 
+	FMatrix GetTranslationInverseMatrix() const
+	{
+		return FMatrix(
+			FVector4(1.0f, 0.0f, 0.0f, 0.0f),
+			FVector4(0.0f, 1.0f, 0.0f, 0.0f),
+			FVector4(0.0f, 0.0f, 1.0f, 0.0f),
+			FVector4(-RelativeLocation.x, -RelativeLocation.y, -RelativeLocation.z, 1.0f));
+	}
+
+	FMatrix GetScaleInverseMatrix() const
+	{
+		return FMatrix(
+			FVector4(1.0f / RelativeScale3D.x, 0.0f, 0.0f, 0.0f),
+			FVector4(0.0f, 1.0f / RelativeScale3D.y, 0.0f, 0.0f),
+			FVector4(0.0f, 0.0f, 1.0f / RelativeScale3D.z, 0.0f),
+			FVector4(0.0f, 0.0f, 0.0f, 1.0f));
+	}
+
+	FMatrix GetModelInverseMatrix() const
+	{
+		return GetTranslationInverseMatrix()
+			* GetRotationMatrix().GetTranspose()
+			* GetScaleInverseMatrix();
+	}
+
 	FVector GetForward()
 	{
 		FMatrix R = GetRotationMatrix();

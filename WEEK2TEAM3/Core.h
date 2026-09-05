@@ -135,6 +135,9 @@ struct FVector
 	}
 };
 
+// 전방 선언
+struct FMatrix;
+
 struct FVector4
 {
 	float x;
@@ -168,6 +171,11 @@ struct FVector4
 	float Length3() const
 	{
 		return sqrt(Length3Squared());
+	}
+
+	FVector Vector3() const
+	{
+		return FVector(x, y, z);
 	}
 
 	FVector4 operator+(const FVector4& rhs) const
@@ -211,6 +219,8 @@ struct FVector4
 		w *= scalar;
 		return *this;
 	}
+
+	FVector4 operator*(const FMatrix& matrix) const;
 };
 
 struct FMatrix
@@ -299,6 +309,21 @@ struct FMatrix
 
 		return (&M[0][0]);
 	}
+};
+
+inline FVector4 FVector4::operator*(const FMatrix& matrix) const
+{
+	return FVector4(
+		x * matrix.M[0][0] + y * matrix.M[1][0] + z * matrix.M[2][0] + w * matrix.M[3][0],
+		x * matrix.M[0][1] + y * matrix.M[1][1] + z * matrix.M[2][1] + w * matrix.M[3][1],
+		x * matrix.M[0][2] + y * matrix.M[1][2] + z * matrix.M[2][2] + w * matrix.M[3][2],
+		x * matrix.M[0][3] + y * matrix.M[1][3] + z * matrix.M[2][3] + w * matrix.M[3][3]);
+}
+
+struct FRay
+{
+	FVector Origin;
+	FVector Direction;
 };
 
 static const FVector Front = FVector(1.0f, 0.0f, 0.0f);

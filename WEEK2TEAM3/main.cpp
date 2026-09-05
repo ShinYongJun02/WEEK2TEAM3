@@ -1,9 +1,10 @@
+#include <cfloat>
+
 #include "Core.h"
 #include "FVertex.h"
 #include "URenderer.h"
 #include "UCamera.h"
 #include "UResourceManager.h"
-
 
 #include "UCubeComp.h"
 #include "USphereComp.h"
@@ -266,6 +267,32 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			{
 				pressed[6] = false;
 			}
+			else if (msg.message == WM_LBUTTONDOWN)
+			{
+				if (!ImGui::GetIO().WantCaptureMouse && !ImGuizmo::IsOver())
+				{
+					float mouseX = (float)(short)LOWORD(msg.lParam);
+					float mouseY = (float)(short)HIWORD(msg.lParam);
+
+					FRay ray = camera.GetRayFromScreen(pt.x, pt.y, (float)renderer.Width, (float)renderer.Height);
+					float t = FLT_MAX;
+					SelectedObjectIndex = -1;
+
+					for (const auto& obj : GUObjectArray)
+					{
+						float temp = FLT_MAX;
+						UPrimitiveComponent* prim = dynamic_cast<UPrimitiveComponent*>(obj);
+						if (prim)
+						{
+							if (prim->RayIntersects(ray, temp) && temp < t)
+							{
+								t = temp;
+								SelectedObjectIndex = obj->InternalIndex;
+							}
+						}
+					}
+				}
+			}
 		}
 
 		float aspectRatio = (float)renderer.GetWidth() / (float)renderer.GetHeight();
@@ -310,7 +337,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 		// ImGui
 		ImGui::Begin("Outliner");
-		
+
 		UObject* TempObject;
 		UPrimitiveComponent* prim;
 		for (int i = 0; i < GUObjectArray.size(); i++)
@@ -334,7 +361,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		UPrimitiveComponent* SelectedObject;
 
 		ImGui::Begin("Details Panel");
-		
+
 		if (SelectedObjectIndex != -1)
 		{
 			TempObject = GUObjectArray[SelectedObjectIndex];
@@ -346,7 +373,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				ImGui::DragFloat3("Scale", &SelectedObject->RelativeScale3D.x, 0.1f);
 			}
 		}
-		
+
 		ImGui::End();
 
 		// ImGuizmo
@@ -386,7 +413,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		ImGui::DragFloat3("Translation", &camera.RelativeLocation.x, 0.1f);
 		ImGui::DragFloat3("Rotation", &camera.RelativeRotation.x, 0.1f);
 		ImGui::DragFloat("fovY", &camera.fovY, 0.1f);
-		ImGui::Text("%d", pressed[6]);
 		ImGui::End();
 
 		ImGui::Begin("Place Actors");
