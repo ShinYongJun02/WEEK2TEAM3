@@ -64,6 +64,31 @@ public:
 	static const UClass* StaticClass();
 	virtual const UClass* GetClass() const;
 
+	static void* operator new(size_t size, std::align_val_t alignment)
+	{
+		void* memory = FUObjectAllocator::Allocate((uint32)size, (uint32)alignment);
+		if (!memory)
+		{
+			throw std::bad_alloc();
+		}
+		return memory;
+	}
+
+	static void operator delete(void* ptr, std::align_val_t alignment) noexcept
+	{
+		FUObjectAllocator::Deallocate(ptr);
+	}
+
+	static void* operator new(size_t size)
+	{
+		return UObject::operator new(size, static_cast<std::align_val_t>(__STDCPP_DEFAULT_NEW_ALIGNMENT__));
+	}
+
+	static void operator delete(void* ptr) noexcept
+	{
+		FUObjectAllocator::Deallocate(ptr);
+	}
+
 	FUUID UUID;
 	uint32 InternalIndex;
 };
@@ -71,23 +96,12 @@ public:
 template<typename T, typename... Args>
 T* NewObject(Args&&... args)
 {
-	void* memory = FUObjectAllocator::Allocate(sizeof(T), alignof(T));
-
-	T* obj = new (memory) T(std::forward<Args>(args)...);
+	T* obj = new T(std::forward<Args>(args)...);
 	obj->UUID = UEngineStatics::GetUUID();
 	obj->InternalIndex = (uint32)GUObjectArray.size();
 	GUObjectArray.push_back(obj);
 
 	return obj;
-}
-
-inline void DeleteObject(UObject* obj)
-{
-	if (obj)
-	{
-		obj->~UObject();
-		FUObjectAllocator::Deallocate(obj);
-	}
 }
 
 struct FObjectFactory

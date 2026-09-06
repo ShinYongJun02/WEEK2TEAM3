@@ -226,8 +226,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	double elapsedTime = 0.0;
 
 	// 카메라
-	UCamera camera;
-	camera.RelativeLocation += FVector(-5.0f);
+	UPerspectiveCamera perspectiveCamera;
+	perspectiveCamera.RelativeLocation += FVector(-5.0f);
+
+	UOrthoCamera orthoCamera;
+	orthoCamera.RelativeLocation += FVector(-5.0f);
+
 	bool pressed[7] = {}; // WSDAEQ, MR
 	float cameraSpeed = 5.0f;
 
@@ -246,6 +250,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	// 종료 시그널
 	bool bIsExit = false;
+
+	bool usePerspectiveCamera = true;
 
 	ImGuizmo::OPERATION TrsMode = ImGuizmo::TRANSLATE;
 	ImGuizmo::MODE WlMode = ImGuizmo::WORLD;
@@ -330,8 +336,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			}
 		}
 
-		float aspectRatio = (float)renderer.GetWidth() / (float)renderer.GetHeight();
-
 		if (inputContext.IsKeyDown('Z'))
 		{
 			TrsMode = ImGuizmo::TRANSLATE;
@@ -353,6 +357,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			WlMode = ImGuizmo::LOCAL;
 		}
 
+
 		// 마우스 추적
 		POINT temp;
 		GetCursorPos(&temp);          // 화면 좌표
@@ -361,18 +366,32 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		float distY = pt.y - temp.y;
 		pt = temp;
 
-		// 카메라 무빙 (카메라 z축 회전 = 오른쪽 보기, 카메라 y축 회전 = 아래 보기
-		camera.RelativeLocation += (
-			camera.GetForward() * (pressed[0] - pressed[1]) +
-			camera.GetRight() * (pressed[2] - pressed[3]) +
-			camera.GetUp() * (pressed[4] - pressed[5])) * ((float)elapsedTime / 1000.0f);
-		if (pressed[6])
+		UCamera* camera;
+		if (usePerspectiveCamera)
 		{
-			camera.RelativeRotation += FVector(0.0f, distY, distX) * ((float)elapsedTime / 1000.0f) * cameraSpeed;
+			camera = &perspectiveCamera;
+		}
+		else 
+		{
+			camera = &orthoCamera;
 		}
 
-		FMatrix view = camera.GetViewMatrix();
-		FMatrix projection = camera.GetProjectionMatrix(aspectRatio);
+		float aspect = (float)renderer.GetWidth() / (float)renderer.GetHeight();
+
+		camera->aspect = aspect;
+
+		// 카메라 무빙 (카메라 z축 회전 = 오른쪽 보기, 카메라 y축 회전 = 아래 보기
+		camera->RelativeLocation += (
+			camera->GetForward() * (pressed[0] - pressed[1]) +
+			camera->GetRight() * (pressed[2] - pressed[3]) +
+			camera->GetUp() * (pressed[4] - pressed[5])) * ((float)elapsedTime / 1000.0f);
+		if (pressed[6])
+		{
+			camera->RelativeRotation += FVector(0.0f, distY, distX) * ((float)elapsedTime / 1000.0f) * cameraSpeed;
+		}
+
+		FMatrix view = camera->GetViewMatrix();
+		FMatrix projection = camera->GetProjectionMatrix();
 		FMatrix viewProjection = view * projection;
 		FMatrix invViewProjection = viewProjection.GetInverse();
 
@@ -409,7 +428,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			if (!prim) continue;
 
 			char label[64];
-			sprintf_s(label, "Object_%d%d%d%d", TempObject->UUID.A, TempObject->UUID.B, TempObject->UUID.C, TempObject->UUID.D);
+			sprintf_s(label, "Object_%s", TempObject->UUID.ToString().c_str());
 
 			bool isSelected = (SelectedObjectIndex == prim->InternalIndex);
 			if (ImGui::Selectable(label, isSelected))
@@ -433,8 +452,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 		if (inputContext.IsMouseButtonDown(0)) {
 			FRay ray;
-			ray.Origin = camera.RelativeLocation;
-			ray.Direction = FVector(worldPos.x, worldPos.y, worldPos.z) - camera.RelativeLocation;
+			ray.Origin = camera->RelativeLocation;
+			ray.Direction = FVector(worldPos.x, worldPos.y, worldPos.z) - camera->RelativeLocation;
 			ray.Direction.Normalize();
 
 			for (int i = 0; i < GUObjectArray.size(); i++)
@@ -480,8 +499,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			if (SelectedObject)
 			{
 				FMatrix model = SelectedObject->GetModelMatrix();
-				FMatrix view = camera.GetViewMatrix();
-				FMatrix projection = camera.GetProjectionMatrix(aspectRatio);
 
 				ImGuizmo::SetOrthographic(false);
 				ImGuizmo::SetRect(0.0f, 0.0f, renderer.GetWidth(), renderer.GetHeight());
@@ -501,12 +518,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				}
 			}
 		}
-
-		ImGui::Begin("Debug Camera");
-		ImGui::DragFloat3("Translation", &camera.RelativeLocation.x, 0.1f);
-		ImGui::DragFloat3("Rotation", &camera.RelativeRotation.x, 0.1f);
-		ImGui::DragFloat("fovY", &camera.fovY, 0.1f);
-		ImGui::End();
 
 		ImGui::Begin("Place Actors");
 		ImGui::Text("FPS %.0f (%.2f ms)", ImGui::GetIO().Framerate, 1000.0f / ImGui::GetIO().Framerate);
@@ -545,7 +556,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		{
 			if (SelectedObjectIndex >= 0 && SelectedObjectIndex < (int32)GUObjectArray.size())
 			{
-				DeleteObject(GUObjectArray[SelectedObjectIndex]);
+				delete GUObjectArray[SelectedObjectIndex];
 				SelectedObjectIndex = -1;
 			}
 		}
@@ -555,6 +566,35 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		ImGui::Text("Heap Size: %zu bytes", FUObjectAllocator::GetHeapSize());
 		ImGui::Text("Total Allocation Bytes: %u bytes", FUObjectAllocator::GetTotalAllocationBytes());
 		ImGui::Text("Total Allocation Count: %u", FUObjectAllocator::GetTotalAllocationCount());
+		ImGui::End();
+
+		ImGui::Begin("Debug Camera");
+		ImGui::DragFloat3("Translation", &camera->RelativeLocation.x, 0.1f);
+		ImGui::DragFloat3("Rotation", &camera->RelativeRotation.x, 0.1f);
+
+		if (camera->IsA<UPerspectiveCamera>())
+		{
+			ImGui::DragFloat("FovY", &perspectiveCamera.FovY, 0.1f);
+		}
+		else
+		{
+			ImGui::DragFloat("HalfHeight", &orthoCamera.HalfHeight, 0.1f);
+		}
+
+		if (ImGui::Checkbox("Use Perspective Camera", &usePerspectiveCamera))
+		{
+			if (usePerspectiveCamera)
+			{
+				perspectiveCamera.RelativeLocation = camera->RelativeLocation;
+				perspectiveCamera.RelativeRotation = camera->RelativeRotation;
+			}
+			else
+			{
+				orthoCamera.RelativeLocation = camera->RelativeLocation;
+				orthoCamera.RelativeRotation = camera->RelativeRotation;
+			}
+		}
+
 		ImGui::End();
 
 		ImGui::Render();

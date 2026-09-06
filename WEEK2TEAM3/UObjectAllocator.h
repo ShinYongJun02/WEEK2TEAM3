@@ -7,9 +7,16 @@ class FUObjectAllocator
 public:
 	static void Initialize(uint32 size)
 	{
+		if (MemoryPool)
+		{
+			throw std::runtime_error("Memory pool is already initialized.");
+		}
+
 		MemoryPool = (int8*)malloc(size);
 		PoolSize = size;
 		FreeList = new FMemoryBlock{ MemoryPool, size, nullptr, nullptr };
+		TotalAllocatedBytes = 0;
+		TotalAllocationCount = 0;
 	}
 
 	static void Release()
@@ -24,25 +31,37 @@ public:
 			block = nextBlock;
 		}
 		FreeList = nullptr;
-		AllocatedMemories.clear();
+		TotalAllocatedBytes = 0;
+		TotalAllocationCount = 0;
 	}
 
 	static void* Allocate(uint32 size, uint32 alignment)
 	{
+		if (size == 0 || alignment == 0 || (alignment & (alignment - 1)) != 0) {
+			return nullptr; // Invalid size or alignment
+		}
+
+		const uint64 headerSize = sizeof(FAllocationHeader);
+
 		FMemoryBlock* block = FreeList;
 		while (block) {
 			FMemory& memory = block->Memory;
 
 			uint64 address = reinterpret_cast<uint64>(memory.Ptr);
-			uint32 padding = (alignment - (address % alignment)) % alignment;
+			uint64 startAddress = address + headerSize;
+			uint32 padding = (alignment - (startAddress % alignment)) % alignment;
 
-			if (padding <= memory.Size && size <= memory.Size - padding) {
+			if (headerSize <= memory.Size && padding <= memory.Size - headerSize && size <= memory.Size - headerSize - padding) {
 				int8* originalPtr = memory.Ptr;
-				int8* alignedPtr = originalPtr + padding;
-				uint32 requiredSize = size + padding;
+				int8* alignedPtr = originalPtr + headerSize + padding;
+				int8* headerPtr = alignedPtr - headerSize;
+				uint32 requiredSize = headerSize + padding + size;
 				uint32 remainingSize = memory.Size - requiredSize;
 
-				AllocatedMemories.emplace(alignedPtr, FMemory{ originalPtr, requiredSize });
+				FAllocationHeader header;
+				header.TotalSize = requiredSize;
+				header.Offset = alignedPtr - originalPtr;
+				std::memcpy(headerPtr, &header, headerSize);
 
 				if (remainingSize > 0)
 				{
@@ -66,6 +85,9 @@ public:
 					delete block;
 				}
 
+				TotalAllocatedBytes += requiredSize;
+				TotalAllocationCount++;
+
 				return alignedPtr;
 			}
 
@@ -77,14 +99,22 @@ public:
 
 	static void Deallocate(void* ptr)
 	{
-		auto it = AllocatedMemories.find(ptr);
-		if (it == AllocatedMemories.end())
+		if (!ptr)
 		{
 			return;
 		}
 
-		FMemory memory = it->second;
+		const uint64 headerSize = sizeof(FAllocationHeader);
+
+		int8* headerPtr = (int8*)ptr - headerSize;
+
+		FAllocationHeader header;
+		std::memcpy(&header, headerPtr, headerSize);
 		
+		FMemory memory;
+		memory.Ptr = (int8*)ptr - header.Offset;
+		memory.Size = header.TotalSize;
+
 		FMemoryBlock* newBlock = new FMemoryBlock{ memory, nullptr, nullptr };
 		
 		FMemoryBlock* prev = nullptr;
@@ -138,8 +168,9 @@ public:
 			}
 			delete adjacentNext;
 		}
-	
-		AllocatedMemories.erase(it);
+
+		TotalAllocatedBytes -= header.TotalSize;
+		TotalAllocationCount--;
 	}
 
 	static uint32 GetHeapSize()
@@ -147,19 +178,14 @@ public:
 		return PoolSize;
 	}
 
-	static uint32 GetTotalAllocationBytes()
+	inline static uint64 GetTotalAllocationBytes()
 	{
-		uint32 totalAllocated = 0;
-		for (const auto& pair : AllocatedMemories)
-		{
-			totalAllocated += pair.second.Size;
-		}
-		return totalAllocated;
+		return TotalAllocatedBytes;
 	}
 
-	static uint32 GetTotalAllocationCount()
+	inline static uint32 GetTotalAllocationCount()
 	{
-		return static_cast<uint32>(AllocatedMemories.size());
+		return TotalAllocationCount;
 	}
 
 private:
@@ -176,8 +202,15 @@ private:
 		FMemoryBlock* Next;
 	};
 
+	struct FAllocationHeader
+	{
+		uint32 TotalSize; // padding + header + requested size
+		uint32 Offset; // offset from the original pointer to returned pointer
+	};
+
 	inline static int8* MemoryPool = nullptr;
 	inline static uint32 PoolSize = 0;
 	inline static FMemoryBlock* FreeList = nullptr;
-	inline static TMap<void*, FMemory> AllocatedMemories;
+	inline static uint64 TotalAllocatedBytes = 0;
+	inline static uint32 TotalAllocationCount = 0;
 };

@@ -3,7 +3,7 @@
 TArray<UObject*> GUObjectArray;
 
 UObject::UObject() 
-	: UUID(0)
+	: UUID()
 	, InternalIndex(0) 
 {
 }

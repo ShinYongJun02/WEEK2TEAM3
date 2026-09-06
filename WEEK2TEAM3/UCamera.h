@@ -6,10 +6,12 @@
 
 class UCamera : public USceneComponent
 {
+	GENERATED_BODY(UCamera, USceneComponent)
+
 public:
 	float nearZ = 0.1f;
 	float farZ = 1000.0f;
-	float fovY = 60.0f;
+	float aspect = 1.0f;
 
 	// 월드의 UE기준 좌표를 렌더링 전 DX 기준으로 변환
 	FMatrix GetUEtoDXAxisSwap()
@@ -36,9 +38,22 @@ public:
 	}
 
 	// aspect = width / height
-	FMatrix GetProjectionMatrix(float aspect)
+	virtual FMatrix GetProjectionMatrix() = 0;
+
+	/*FMatrix GetInverse()
 	{
-		float radian = DegreeToRadian(fovY);
+
+	}*/
+};
+
+class UPerspectiveCamera : public UCamera
+{
+	GENERATED_BODY(UPerspectiveCamera, UCamera)
+
+public:
+	FMatrix GetProjectionMatrix() override
+	{
+		float radian = DegreeToRadian(FovY);
 		float scaleY = 1.0f / tan(radian / 2);
 		float scaleX = scaleY / aspect;
 		float r = farZ / (farZ - nearZ);
@@ -50,8 +65,29 @@ public:
 			FVector4(0.0f, 0.0f, -nearZ * r, 0.0f));
 	}
 
-	/*FMatrix GetInverse()
-	{
-
-	}*/
+	float FovY = 60.0f;
 };
+
+class UOrthoCamera : public UCamera
+{
+	GENERATED_BODY(UOrthoCamera, UCamera)
+
+public:
+	FMatrix GetProjectionMatrix() override
+	{
+		float left = -HalfHeight * aspect;
+		float right = HalfHeight * aspect;
+		float top = HalfHeight;
+		float bottom = -HalfHeight;
+
+		return FMatrix{
+			FVector4(2.0f / (right - left), 0.0f, 0.0f, 0.0f),
+			FVector4(0.0f, 2.0f / (top - bottom), 0.0f, 0.0f),
+			FVector4(0.0f, 0.0f, 1.0f / (farZ - nearZ), 0.0f),
+			FVector4(-(right + left) / (right - left), -(top + bottom) / (top - bottom), -nearZ / (farZ - nearZ), 1.0f)
+		};
+	}
+
+	float HalfHeight = 1.0f;
+};
+
