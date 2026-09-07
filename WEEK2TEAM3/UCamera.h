@@ -6,16 +6,15 @@
 
 class UCamera : public USceneComponent
 {
+	GENERATED_BODY(UCamera, USceneComponent)
+
 public:
-	DECLARE_CLASS(UCamera, USceneComponent)
 	float nearZ = 0.1f;
 	float farZ = 1000.0f;
-	float fovY = 60.0f;
-	float orthoX = 10.0f;
-	bool isOrthogonal = false;
+	float aspect = 1.0f;
 
 	// 월드의 UE기준 좌표를 렌더링 전 DX 기준으로 변환
-	FMatrix GetUEtoDXAxisSwap() const
+	FMatrix GetUEtoDXAxisSwap()
 	{
 		return FMatrix(
 			FVector4(0.0f, 0.0f, 1.0f, 0.0f),   // UE.X(전방) -> DX.Z
@@ -24,7 +23,7 @@ public:
 			FVector4(0.0f, 0.0f, 0.0f, 1.0f));
 	}
 
-	FMatrix GetViewMatrix() const
+	FMatrix GetViewMatrix()
 	{
 		// 뷰 행렬
 		// = 카메라를 원점으로 이동시키는 행렬(=카메라의 이동행렬의 역행렬) * 카메라를 월드좌표계에 일치시키는 회전행렬(=카메라 회전행렬의 역행렬)
@@ -38,9 +37,23 @@ public:
 		return ViewMatrix;
 	}
 
-	FMatrix GetPerspectiveMatrix(float aspect) const
+	// aspect = width / height
+	virtual FMatrix GetProjectionMatrix() = 0;
+
+	/*FMatrix GetInverse()
 	{
-		float radian = DegreeToRadian(fovY);
+
+	}*/
+};
+
+class UPerspectiveCamera : public UCamera
+{
+	GENERATED_BODY(UPerspectiveCamera, UCamera)
+
+public:
+	FMatrix GetProjectionMatrix() override
+	{
+		float radian = DegreeToRadian(FovY);
 		float scaleY = 1.0f / tan(radian / 2);
 		float scaleX = scaleY / aspect;
 		float r = farZ / (farZ - nearZ);
@@ -52,54 +65,29 @@ public:
 			FVector4(0.0f, 0.0f, -nearZ * r, 0.0f));
 	}
 
-	// 카메라 회전, 오브젝트 피킹, W/S 이동 수정 필요. + 기즈모
-	FMatrix GetOrthogonalMatrix(float aspect) const
-	{
-		float orthoY = orthoX / aspect;
-
-		float width = orthoX;
-		float height = orthoY;
-		float depth = farZ - nearZ;
-
-		return FMatrix(
-			FVector4(2.0f / width, 0.0f, 0.0f, 0.0f),
-			FVector4(0.0f, 2.0f / height, 0.0f, 0.0f),
-			FVector4(0.0f, 0.0f, 1.0f / depth, 0.0f),
-			FVector4(0.0f, 0.0f, -nearZ / depth, 1.0f)
-		);
-	}
-
-	// aspect = width / height
-	FMatrix GetProjectionMatrix(float aspect) const
-	{
-		if (isOrthogonal) return GetOrthogonalMatrix(aspect);
-		return GetPerspectiveMatrix(aspect);
-	}
-
-	FRay GetRayFromScreen(float mouseX, float mouseY, float screenWidth, float screenHeight) const
-	{
-		// world = NDC * (proj^-1) * (view^-1)
-
-		// screen -> NDC
-		float ndcX = 2.0f * mouseX / screenWidth - 1.0f;
-		float ndcY = -2.0f * mouseY / screenHeight + 1.0f;
-
-		// (proj)
-		float aspect = screenWidth / screenHeight;
-		FMatrix P = GetProjectionMatrix(aspect);
-
-		// (far - near) 방향 벡터
-		FVector4 dirView(ndcX / P.M[0][0], ndcY / P.M[1][1], 1.0f);
-
-		// (view^-1) (회전부)
-		FMatrix viewInvRot = GetUEtoDXAxisSwap().GetTranspose() * GetRotationMatrix();
-
-		// Ray
-		FRay ray;
-		ray.Origin = RelativeLocation;
-		ray.Direction = (dirView * viewInvRot).Vector3();
-		ray.Direction.Normalize();
-
-		return ray;
-	}
+	float FovY = 60.0f;
 };
+
+class UOrthoCamera : public UCamera
+{
+	GENERATED_BODY(UOrthoCamera, UCamera)
+
+public:
+	FMatrix GetProjectionMatrix() override
+	{
+		float left = -HalfHeight * aspect;
+		float right = HalfHeight * aspect;
+		float top = HalfHeight;
+		float bottom = -HalfHeight;
+
+		return FMatrix{
+			FVector4(2.0f / (right - left), 0.0f, 0.0f, 0.0f),
+			FVector4(0.0f, 2.0f / (top - bottom), 0.0f, 0.0f),
+			FVector4(0.0f, 0.0f, 1.0f / (farZ - nearZ), 0.0f),
+			FVector4(-(right + left) / (right - left), -(top + bottom) / (top - bottom), -nearZ / (farZ - nearZ), 1.0f)
+		};
+	}
+
+	float HalfHeight = 1.0f;
+};
+

@@ -1,6 +1,12 @@
 #include "UObject.h"
 
-UObject::UObject() : UUID(0), InternalIndex(0) {}
+TArray<UObject*> GUObjectArray;
+
+UObject::UObject() 
+	: UUID()
+	, InternalIndex(0) 
+{
+}
 
 UObject::~UObject()
 {
@@ -9,67 +15,20 @@ UObject::~UObject()
 		GUObjectArray[InternalIndex] = GUObjectArray.back();
 		GUObjectArray[InternalIndex]->InternalIndex = InternalIndex;
 		GUObjectArray.pop_back();
-		//GUObjectArray.erase(GUObjectArray.begin() + InternalIndex);
 	}
-}
+};
 
-bool UObject::IsA(UClass* c) const
+UObject* UObject::CreateInstance()
 {
-	return GetClass()->IsChildOf(c);
+	return NewObject<UObject>();
 }
 
-UClass* UObject::GetClass() const
-{
-	return StaticClass();
+const UClass* UObject::StaticClass() {
+	static UClass ClassInfo{ "UObject", nullptr, &UObject::CreateInstance };
+	return &ClassInfo;
 }
 
-UClass* UObject::StaticClass()
-{
-	static UClass Instance("UObject", nullptr, &ConstructUObject<UObject>);
-	return &Instance;
+const UClass* UObject::GetClass() const {
+	return UObject::StaticClass();
 }
 
-void* UObject::operator new(size_t Size)
-{
-	UEngineStatics::TotalAllocationBytes += static_cast<uint32>(Size);
-	++UEngineStatics::TotalAllocationCount;
-
-	return ::operator new(Size);
-}
-
-void UObject::operator delete(void* Ptr, size_t Size)
-{
-	if (Ptr == nullptr)
-	{
-		return;
-	}
-
-	UEngineStatics::TotalAllocationBytes -= static_cast<uint32>(Size);
-	--UEngineStatics::TotalAllocationCount;
-
-	::operator delete(Ptr);
-}
-
-void* UObject::operator new[](size_t Size)
-{
-	UEngineStatics::TotalAllocationBytes += static_cast<uint32>(Size);
-	++UEngineStatics::TotalAllocationCount;
-
-	return ::operator new[](Size);
-}
-
-void UObject::operator delete[](void* Ptr, size_t Size)
-{
-	if (Ptr == nullptr)
-	{
-		return;
-	}
-
-	UEngineStatics::TotalAllocationBytes -= static_cast<uint32>(Size);
-	--UEngineStatics::TotalAllocationCount;
-
-	::operator delete[](Ptr);
-}
-
-TArray<UObject*> GUObjectArray;
-//TArray<std::unique_ptr<UObject>> GUObjectArray;

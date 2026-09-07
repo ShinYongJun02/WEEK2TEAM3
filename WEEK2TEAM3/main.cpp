@@ -1,27 +1,65 @@
-#include <cfloat>
-
 #include "Core.h"
 #include "FVertex.h"
 #include "URenderer.h"
 #include "UCamera.h"
 #include "UResourceManager.h"
-
+#include "UInputContext.h"
 #include "UCubeComp.h"
 #include "USphereComp.h"
 #include "UPlaneComp.h"
 #include "USceneManager.h"
+#include "UObjectAllocator.h"
+#include "FConsoleWindow.h"
+#include "FLogger.h"
+#include "Helper.h"
+
+// 화면 경계
+const float leftBorder = -1.0f;
+const float rightBorder = 1.0f;
+const float topBorder = 1.0f;
+const float bottomBorder = -1.0f;
 
 class TWindowEventHandler {
 public:
-	TWindowEventHandler(URenderer& renderer) : Renderer(renderer) {}
+	TWindowEventHandler(URenderer& renderer, UInputContext& inputContext) 
+		: Renderer(renderer)
+		, InputContext(inputContext) 
+	{
+	}
 
-	void HandleResize(UINT width, UINT height)
+	inline void HandleResize(UINT width, UINT height)
 	{
 		Renderer.Resize(width, height);
 	}
 
+	inline void HandleKeyDown(uint64 keyCode)
+	{
+		InputContext.HandleKeyDown(keyCode);
+	}
+
+	inline void HandleKeyUp(uint64 keyCode)
+	{
+		InputContext.HandleKeyUp(keyCode);
+	}
+
+	inline void HandleMouseButtonDown(uint8 buttonIndex)
+	{
+		InputContext.HandleMouseButtonDown(buttonIndex);
+	}
+
+	inline void HandleMouseButtonUp(uint8 buttonIndex)
+	{
+		InputContext.HandleMouseButtonUp(buttonIndex);
+	}
+
+	inline void HandleMouseMove(int32 x, int32 y)
+	{
+		InputContext.HandleMouseMove(x, y);
+	}
+
 private:
 	URenderer& Renderer;
+	UInputContext& InputContext;
 };
 
 void CreateDebugConsole() {
@@ -49,36 +87,34 @@ void CreateDebugConsole() {
 
 UPrimitiveComponent* SpawnPrimitiveByType(int typeIndex, UResourceManager& ResourceManager)
 {
-	UPrimitiveComponent* Comp = nullptr;
-	FString MeshKey;
+	UPrimitiveComponent* NewPrimitive = nullptr;
 
 	switch (typeIndex)
 	{
 	case 0:
-		Comp = dynamic_cast<UPrimitiveComponent*>(NewObject(UCubeComp::StaticClass()));
-		MeshKey = "Cube";
+		{
+			UCubeComp* cube = (UCubeComp*)FObjectFactory::ConstructObject(UCubeComp::StaticClass());
+			cube->Initialize(ResourceManager);
+			NewPrimitive = cube;
+		}
 		break;
 	case 1:
-		Comp = dynamic_cast<UPrimitiveComponent*>(NewObject(USphereComp::StaticClass()));
-		MeshKey = "Sphere";
+		{
+			USphereComp* sphere = (USphereComp*)FObjectFactory::ConstructObject(USphereComp::StaticClass());
+			sphere->Initialize(ResourceManager);
+			NewPrimitive = sphere;
+		}
 		break;
 	case 2:
-		Comp = dynamic_cast<UPrimitiveComponent*>(NewObject(UPlaneComp::StaticClass()));
-		MeshKey = "Plane";
+		{
+			UPlaneComp* plane = (UPlaneComp*)FObjectFactory::ConstructObject(UPlaneComp::StaticClass());
+			plane->Initialize(ResourceManager);
+			NewPrimitive = plane;
+		}
 		break;
-	default:
-		return nullptr;
 	}
 
-	if (Comp == nullptr)
-	{
-		return nullptr;
-	}
-
-	// 종류마다 하나뿐인 메시를 공유 참조한다. 새로 만들지 않는다.
-	Comp->StaticMesh = ResourceManager.GetStaticMesh(MeshKey);
-
-	return Comp;
+	return NewPrimitive;
 }
 
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -104,6 +140,38 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			UINT width = LOWORD(lParam);
 			UINT height = HIWORD(lParam);
 			eventHandler->HandleResize(width, height);
+		}
+		break;
+	case WM_KEYDOWN:
+		if (eventHandler)
+		{
+			eventHandler->HandleKeyDown(wParam);
+		}
+		break;
+	case WM_KEYUP:
+		if (eventHandler)
+		{
+			eventHandler->HandleKeyUp(wParam);
+		}
+		break;
+	case WM_LBUTTONDOWN:
+		if (eventHandler)
+		{
+			eventHandler->HandleMouseButtonDown(0);
+		}
+		break;
+	case WM_LBUTTONUP:
+		if (eventHandler)
+		{
+			eventHandler->HandleMouseButtonUp(0);
+		}
+		break;
+	case WM_MOUSEMOVE:
+		if (eventHandler)
+		{
+			int32 x = GET_X_LPARAM(lParam);
+			int32 y = GET_Y_LPARAM(lParam);
+			eventHandler->HandleMouseMove(x, y);
 		}
 		break;
 	default:
@@ -135,11 +203,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	renderer.CreateShader();
 	renderer.CreateConstantBuffer();
 
-	// Init ResourceManager
+	FUObjectAllocator::Initialize(1024 * 1024 * 100); // 100MB
+
 	UResourceManager resourceManager;
 	resourceManager.Initialize(renderer);
 
-	TWindowEventHandler windowEventHandler(renderer);
+	UInputContext inputContext;
+
+	TWindowEventHandler windowEventHandler(renderer, inputContext);
 
 	SetWindowLongPtrW(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(&windowEventHandler));
 
@@ -159,8 +230,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	double elapsedTime = 0.0;
 
 	// 카메라
-	UCamera camera;
-	camera.RelativeLocation += FVector(-5.0f);
+	UPerspectiveCamera perspectiveCamera;
+	perspectiveCamera.RelativeLocation += FVector(-5.0f);
+
+	UOrthoCamera orthoCamera;
+	orthoCamera.RelativeLocation += FVector(-5.0f);
+
 	bool pressed[7] = {}; // WSDAEQ, MR
 	float cameraSpeed = 5.0f;
 
@@ -180,8 +255,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// 종료 시그널
 	bool bIsExit = false;
 
+	bool usePerspectiveCamera = true;
+
+	FConsoleWindow consoleWindow;
+
 	ImGuizmo::OPERATION TrsMode = ImGuizmo::TRANSLATE;
 	ImGuizmo::MODE WlMode = ImGuizmo::WORLD;
+
+	UE_LOG(Test, Info, "Game Tech Lab Start!");
+	UE_LOG(Test, Info, "This is long message This is long message This is long message This is long message This is long message This is long message This is long message This is long message This is long message This is long message");
+	UE_LOG(Test, Warning, "This is a warning message.");
+	UE_LOG(Test, Error, "This is an error message.");
 
 	while (bIsExit == false)
 	{
@@ -252,26 +336,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				{
 					pressed[5] = false;
 				}
-				if (msg.wParam == 'Z')
-				{
-					TrsMode = ImGuizmo::TRANSLATE;
-				}
-				if (msg.wParam == 'X')
-				{
-					TrsMode = ImGuizmo::ROTATE;
-				}
-				if (msg.wParam == 'C')
-				{
-					TrsMode = ImGuizmo::SCALE;
-				}
-				if (msg.wParam == 'V')
-				{
-					WlMode = ImGuizmo::WORLD;
-				}
-				if (msg.wParam == 'B')
-				{
-					WlMode = ImGuizmo::LOCAL;
-				}
 			}
 			else if (msg.message == WM_RBUTTONDOWN)
 			{
@@ -281,35 +345,29 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			{
 				pressed[6] = false;
 			}
-			else if (msg.message == WM_LBUTTONDOWN)
-			{
-				if (!ImGui::GetIO().WantCaptureMouse && !ImGuizmo::IsOver())
-				{
-					float mouseX = (float)(short)LOWORD(msg.lParam);
-					float mouseY = (float)(short)HIWORD(msg.lParam);
-
-					FRay ray = camera.GetRayFromScreen(pt.x, pt.y, (float)renderer.Width, (float)renderer.Height);
-					float t = FLT_MAX;
-					SelectedObjectIndex = -1;
-
-					for (const auto& obj : GUObjectArray)
-					{
-						float temp = FLT_MAX;
-						UPrimitiveComponent* prim = dynamic_cast<UPrimitiveComponent*>(obj);
-						if (prim)
-						{
-							if (prim->RayIntersects(ray, temp) && temp < t)
-							{
-								t = temp;
-								SelectedObjectIndex = obj->InternalIndex;
-							}
-						}
-					}
-				}
-			}
 		}
 
-		float aspectRatio = (float)renderer.GetWidth() / (float)renderer.GetHeight();
+		if (inputContext.IsKeyDown('Z'))
+		{
+			TrsMode = ImGuizmo::TRANSLATE;
+		}
+		else if (inputContext.IsKeyDown('X'))
+		{
+			TrsMode = ImGuizmo::ROTATE;
+		}
+		else if (inputContext.IsKeyDown('C'))
+		{
+			TrsMode = ImGuizmo::SCALE;
+		}
+		else if (inputContext.IsKeyDown('V'))
+		{
+			WlMode = ImGuizmo::WORLD;
+		}
+		else if (inputContext.IsKeyDown('B'))
+		{
+			WlMode = ImGuizmo::LOCAL;
+		}
+
 
 		// 마우스 추적
 		POINT temp;
@@ -319,26 +377,46 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		float distY = pt.y - temp.y;
 		pt = temp;
 
+		UCamera* camera;
+		if (usePerspectiveCamera)
+		{
+			camera = &perspectiveCamera;
+		}
+		else 
+		{
+			camera = &orthoCamera;
+		}
+
+		float aspect = (float)renderer.GetWidth() / (float)renderer.GetHeight();
+
+		camera->aspect = aspect;
+
 		// 카메라 무빙 (카메라 z축 회전 = 오른쪽 보기, 카메라 y축 회전 = 아래 보기
-		camera.RelativeLocation += (
-			camera.GetForward() * (pressed[0] - pressed[1]) +
-			camera.GetRight() * (pressed[2] - pressed[3]) +
-			camera.GetUp() * (pressed[4] - pressed[5])) * ((float)elapsedTime / 1000.0f);
+		camera->RelativeLocation += (
+			camera->GetForward() * (pressed[0] - pressed[1]) +
+			camera->GetRight() * (pressed[2] - pressed[3]) +
+			camera->GetUp() * (pressed[4] - pressed[5])) * ((float)elapsedTime / 1000.0f);
 		if (pressed[6])
 		{
-			camera.RelativeRotation += FVector(0.0f, distY, distX) * ((float)elapsedTime / 1000.0f) * cameraSpeed;
+			camera->RelativeRotation += FVector(0.0f, distY, distX) * ((float)elapsedTime / 1000.0f) * cameraSpeed;
 		}
+
+		FMatrix view = camera->GetViewMatrix();
+		FMatrix projection = camera->GetProjectionMatrix();
+		FMatrix viewProjection = view * projection;
+		FMatrix invViewProjection = viewProjection.GetInverse();
 
 		// Transform
 		renderer.Prepare();
 		renderer.PrepareShader();
-		renderer.UpdateViewConstant(camera.GetViewMatrix() * camera.GetProjectionMatrix(renderer.ViewportInfo.Width / renderer.ViewportInfo.Height));
+
+		renderer.UpdateViewConstant(viewProjection);
 
 		for (UObject* obj : GUObjectArray)
 		{
-			UPrimitiveComponent* prim = dynamic_cast<UPrimitiveComponent*>(obj);
-			if (prim)
+			if (obj->IsA<UPrimitiveComponent>())
 			{
+				UPrimitiveComponent* prim = static_cast<UPrimitiveComponent*>(obj);
 				prim->Render(renderer);
 			}
 		}
@@ -348,98 +426,130 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		ImGui::NewFrame();
 		ImGuizmo::BeginFrame();
 
+		// ImGui
+		ImGui::Begin("Outliner");
+		
 		UObject* TempObject;
+		UPrimitiveComponent* Primative;
+		for (UObject* obj : GUObjectArray)
+		{
+			char label[64];
+
+			if (obj->IsA<UCubeComp>())
+			{
+				Primative = static_cast<UCubeComp*>(obj);
+				sprintf_s(label, "Cube_%s", Primative->UUID.ToString().c_str());
+			}
+			else if (obj->IsA<USphereComp>())
+			{
+				Primative = static_cast<USphereComp*>(obj);
+				sprintf_s(label, "Sphere_%s", Primative->UUID.ToString().c_str());
+			}
+			else if (obj->IsA<UPlaneComp>())
+			{
+				Primative = static_cast<UPlaneComp*>(obj);
+				sprintf_s(label, "Plane_%s", Primative->UUID.ToString().c_str());
+			}
+			else
+			{
+				continue;
+			}
+
+			bool bIsSelected = (SelectedObjectIndex == Primative->InternalIndex);
+			if (ImGui::Selectable(label, bIsSelected))
+			{
+				SelectedObjectIndex = Primative->InternalIndex;
+			}
+		}
+		ImGui::End();
+
 		UPrimitiveComponent* SelectedObject;
+
+		int32 mouseX = inputContext.GetMouseX();
+		int32 mouseY = inputContext.GetMouseY();
+
+		float mappedX = Remap(mouseX, 0, renderer.GetWidth(), -1.f, 1.f);
+		float mappedY = -Remap(mouseY, 0, renderer.GetHeight(), -1.f, 1.f);
+
+		FVector4 ndcPos(mappedX, mappedY, 1.0f, 1.0f);
+		FVector4 worldPos = ndcPos * invViewProjection;
+		worldPos /= worldPos.w;
+
+		if (inputContext.IsMouseButtonDown(0)) {
+			FRay ray;
+			ray.Origin = camera->RelativeLocation;
+			ray.Direction = FVector(worldPos.x, worldPos.y, worldPos.z) - camera->RelativeLocation;
+			ray.Direction.Normalize();
+
+			for (int i = 0; i < GUObjectArray.size(); i++)
+			{
+				if (!GUObjectArray[i]->IsA<UPrimitiveComponent>())
+				{
+					continue;
+				}
+
+				SelectedObject = static_cast<UPrimitiveComponent*>(GUObjectArray[i]);
+
+				if (SelectedObject->CheckIntersection(ray))
+				{
+					SelectedObjectIndex = SelectedObject->InternalIndex;
+					break;
+				}
+			}
+		}
+
+
+
+		ImGui::Begin("Details Panel");
+		
+		if (SelectedObjectIndex != -1)
+		{
+			TempObject = GUObjectArray[SelectedObjectIndex];
+			SelectedObject = dynamic_cast<UPrimitiveComponent*>(TempObject);
+			if (SelectedObject)
+			{
+				ImGui::DragFloat3("Translation", &SelectedObject->RelativeLocation.x, 0.1f);
+				ImGui::DragFloat3("Rotation", &SelectedObject->RelativeRotation.x, 0.1f);
+				ImGui::DragFloat3("Scale", &SelectedObject->RelativeScale3D.x, 0.1f);
+			}
+		}
+		
+		ImGui::End();
 
 		// ImGuizmo
 		if (SelectedObjectIndex != -1)
 		{
-			if (SelectedObjectIndex >= 0 && SelectedObjectIndex < (int32)GUObjectArray.size())
+			TempObject = GUObjectArray[SelectedObjectIndex];
+			SelectedObject = dynamic_cast<UPrimitiveComponent*>(TempObject);
+			FMatrix Mat = SelectedObject->GetModelMatrix();
+
+			if (SelectedObject)
 			{
-				TempObject = GUObjectArray[SelectedObjectIndex];
-				SelectedObject = dynamic_cast<UPrimitiveComponent*>(TempObject);
-				FMatrix Mat = SelectedObject->GetModelMatrix();
+				FMatrix model = SelectedObject->GetModelMatrix();
 
-				if (SelectedObject)
+				ImGuizmo::SetOrthographic(false);
+				ImGuizmo::SetRect(0.0f, 0.0f, renderer.GetWidth(), renderer.GetHeight());
+				ImGuizmo::Manipulate(view.M[0], projection.M[0], TrsMode, WlMode, model.M[0], NULL, NULL);
+
+				if (ImGuizmo::IsUsing())
 				{
-					FMatrix model = SelectedObject->GetModelMatrix();
-					FMatrix view = camera.GetViewMatrix();
-					FMatrix projection = camera.GetProjectionMatrix(aspectRatio);
+					float translation[3];
+					float rotation[3];
+					float scale[3];
 
-					ImGuizmo::SetOrthographic(false);
-					ImGuizmo::SetRect(0.0f, 0.0f, renderer.GetWidth(), renderer.GetHeight());
-					ImGuizmo::Manipulate(view.M[0], projection.M[0], TrsMode, WlMode, model.M[0], NULL, NULL);
+					ImGuizmo::DecomposeMatrixToComponents(model.M[0], translation, rotation, scale);
 
-					if (ImGuizmo::IsUsing())
-					{
-						float translation[3];
-						float rotation[3];
-						float scale[3];
-
-						ImGuizmo::DecomposeMatrixToComponents(model.M[0], translation, rotation, scale);
-
-						SelectedObject->RelativeLocation = FVector(translation[0], translation[1], translation[2]);
-						SelectedObject->RelativeRotation = FVector(-rotation[0], -rotation[1], rotation[2]);
-						SelectedObject->RelativeScale3D = FVector(scale[0], scale[1], scale[2]);
-					}
+					SelectedObject->RelativeLocation = FVector(translation[0], translation[1], translation[2]);
+					SelectedObject->RelativeRotation = FVector(-rotation[0], -rotation[1], rotation[2]);
+					SelectedObject->RelativeScale3D = FVector(scale[0], scale[1], scale[2]);
 				}
 			}
 		}
-
-		// ImGui
-		ImGui::Begin("Outliner");
-		UPrimitiveComponent* prim;
-		for (int i = 0; i < GUObjectArray.size(); i++)
-		{
-			TempObject = GUObjectArray[i];
-
-			prim = dynamic_cast<UPrimitiveComponent*>(TempObject);
-			if (!prim) continue;
-
-			char label[64];
-			sprintf_s(label, "Object_%d%d%d%d", TempObject->UUID.A, TempObject->UUID.B, TempObject->UUID.C, TempObject->UUID.D);
-
-			bool isSelected = (SelectedObjectIndex == prim->InternalIndex);
-			if (ImGui::Selectable(label, isSelected))
-			{
-				SelectedObjectIndex = prim->InternalIndex;
-			}
-		}
-		ImGui::End();
-
-		ImGui::Begin("Details Panel");
-		if (SelectedObjectIndex != -1)
-		{
-			if (SelectedObjectIndex >= 0 && SelectedObjectIndex < (int32)GUObjectArray.size())
-			{
-				TempObject = GUObjectArray[SelectedObjectIndex];
-				SelectedObject = dynamic_cast<UPrimitiveComponent*>(TempObject);
-				if (SelectedObject)
-				{
-					ImGui::DragFloat3("Translation", &SelectedObject->RelativeLocation.x, 0.1f);
-					ImGui::DragFloat3("Rotation", &SelectedObject->RelativeRotation.x, 0.1f);
-					ImGui::DragFloat3("Scale", &SelectedObject->RelativeScale3D.x, 0.1f);
-				}
-			}
-		}
-		ImGui::End();
-
-		ImGui::Begin("Engine Statics");
-		ImGui::Text("TotalAllocationBytes: %d", UEngineStatics::TotalAllocationBytes);
-		ImGui::Text("TotalAllocationCount: %d", UEngineStatics::TotalAllocationCount);
-		ImGui::End();
-
-		ImGui::Begin("Debug Camera");
-		ImGui::DragFloat3("Translation", &camera.RelativeLocation.x, 0.1f);
-		ImGui::DragFloat3("Rotation", &camera.RelativeRotation.x, 0.1f);
-		ImGui::DragFloat("fovY", &camera.fovY, 0.1f);
-		ImGui::DragFloat("orthoX", &camera.orthoX, 0.1f);
-		ImGui::Checkbox("orthogonal", &camera.isOrthogonal);
-		ImGui::End();
 
 		ImGui::Begin("Place Actors");
 		ImGui::Text("FPS %.0f (%.2f ms)", ImGui::GetIO().Framerate, 1000.0f / ImGui::GetIO().Framerate);
 		ImGui::Separator();
+
 		if (ImGui::BeginCombo("Primitive", PrimitiveTypeNames[SelectedPrimitiveIndex]))
 		{
 			for (int i = 0; i < std::size(PrimitiveTypeNames); i++)
@@ -456,6 +566,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			}
 			ImGui::EndCombo();
 		}
+
 		if (ImGui::Button("Spawn", ImVec2(80, 0)))
 		{
 			for (int i = 0; i < SpawnCount; i++)
@@ -463,9 +574,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				SpawnPrimitiveByType(SelectedPrimitiveIndex, resourceManager);
 			}
 		}
+
 		ImGui::SameLine();
 		ImGui::SetNextItemWidth(150);
 		ImGui::SliderInt("Number of spawn", &SpawnCount, 1, 100);
+
 		if (ImGui::Button("Delete", ImVec2(80, 0)))
 		{
 			if (SelectedObjectIndex >= 0 && SelectedObjectIndex < (int32)GUObjectArray.size())
@@ -474,26 +587,65 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				SelectedObjectIndex = -1;
 			}
 		}
+
 		ImGui::Separator();
-		if (ImGui::Button("Save scene"))
+
+		if (ImGui::Button("Save Scene", ImVec2(120, 0)))
 		{
-			USceneManager::SaveScene(1, UEngineStatics::GetUUID());
+			USceneManager::SaveScene();
 		}
-		if (ImGui::Button("Load scene"))
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Load Scene", ImVec2(120, 0)))
 		{
 			USceneManager::LoadScene(resourceManager);
 			SelectedObjectIndex = -1;
-			SelectedObject = nullptr;
 		}
 		ImGui::End();
 
-		// 콘솔
+		ImGui::Begin("Program Properties");
+		ImGui::Text("Heap Size: %zu bytes", FUObjectAllocator::GetHeapSize());
+		ImGui::Text("Total Allocation Bytes: %u bytes", FUObjectAllocator::GetTotalAllocationBytes());
+		ImGui::Text("Total Allocation Count: %u", FUObjectAllocator::GetTotalAllocationCount());
+		ImGui::End();
+
+		ImGui::Begin("Debug Camera");
+		ImGui::DragFloat3("Translation", &camera->RelativeLocation.x, 0.1f);
+		ImGui::DragFloat3("Rotation", &camera->RelativeRotation.x, 0.1f);
+
+		if (camera->IsA<UPerspectiveCamera>())
+		{
+			ImGui::DragFloat("FovY", &perspectiveCamera.FovY, 0.1f);
+		}
+		else
+		{
+			ImGui::DragFloat("HalfHeight", &orthoCamera.HalfHeight, 0.1f);
+		}
+
+		if (ImGui::Checkbox("Use Perspective Camera", &usePerspectiveCamera))
+		{
+			if (usePerspectiveCamera)
+			{
+				perspectiveCamera.RelativeLocation = camera->RelativeLocation;
+				perspectiveCamera.RelativeRotation = camera->RelativeRotation;
+			}
+			else
+			{
+				orthoCamera.RelativeLocation = camera->RelativeLocation;
+				orthoCamera.RelativeRotation = camera->RelativeRotation;
+			}
+		}
+
+		ImGui::End();
 
 		ImGui::Render();
 		ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
 		// 그리기 명령 실행
 		renderer.SwapBuffer();
+
+		inputContext.Update();
 
 		do
 		{
@@ -505,11 +657,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		} while (elapsedTime < targetFrameTime);
 	}
 
+	resourceManager.Release();
+
+	FUObjectAllocator::Release();
+
 	ImGui_ImplDX11_Shutdown();	//ImGui 리소스 해제
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
-
-	resourceManager.Release();
 
 	// 렌더러 리소스 해제
 	renderer.ReleaseConstantBuffer();

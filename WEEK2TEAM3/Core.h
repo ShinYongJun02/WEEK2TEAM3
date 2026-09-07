@@ -1,6 +1,7 @@
 #pragma once
 
-#include <windows.h>					
+#include <windows.h>
+#include <windowsx.h>
 #include <d3d11.h>						
 #include <d3dcompiler.h>			
 
@@ -16,6 +17,10 @@
 #include <map>
 #include <unordered_map>
 #include <bitset>
+#include <functional>
+#include <deque>
+#include <chrono>
+#include <format>
 #include <utility>
 
 #define ASSERT(expr) if (!(expr)) { std::cerr << "Assertion failed: " << #expr << std::endl; std::abort(); }
@@ -26,11 +31,11 @@ typedef int int32;
 typedef unsigned int uint32;
 typedef unsigned long long uint64;
 
-template<typename A, typename B>
-using TPair = std::pair<A, B>;
-
 template <typename T>
 using TArray = std::vector<T>;
+
+template <typename A, typename B>
+using TPair = std::pair<A, B>;
 
 template <typename T>
 using TSharedPtr = std::shared_ptr<T>;
@@ -46,8 +51,37 @@ using FString = std::string;
 template <typename TKey, typename TValue>
 using TMap = std::unordered_map<TKey, TValue>;
 
+template <typename TKey>
+using TDeque = std::deque<TKey>;
+
 template <size_t N>
 using FBitSet = std::bitset<N>;
+
+using FDateTime = std::chrono::system_clock::time_point;
+
+struct FPoint
+{
+	float x;
+	float y;
+};
+
+struct FVector2
+{
+	float x;
+	float y;
+
+	FVector2(float _x = 0, float _y = 0) : x(_x), y(_y) {}
+
+	float LengthSquared() const
+	{
+		return x * x + y * y;
+	}
+
+	FVector2 operator-(const FVector2& other) const
+	{
+		return FVector2(x - other.x, y - other.y);
+	}
+};
 
 struct FVector
 {
@@ -101,6 +135,11 @@ struct FVector
 		return FVector(x - rhs.x, y - rhs.y, z - rhs.z);
 	}
 
+	FVector operator-() const
+	{
+		return FVector(-x, -y, -z);
+	}
+
 	FVector operator*(float scalar) const
 	{
 		return FVector(x * scalar, y * scalar, z * scalar);
@@ -139,8 +178,15 @@ struct FVector
 	}
 };
 
-// 전방 선언
-struct FMatrix;
+inline static float Dot(const FVector& a, const FVector& b)
+{
+	return a.Dot(b);
+}
+
+inline static FVector Cross(const FVector& a, const FVector& b)
+{
+	return a.Cross(b);
+}
 
 struct FVector4
 {
@@ -175,11 +221,6 @@ struct FVector4
 	float Length3() const
 	{
 		return sqrt(Length3Squared());
-	}
-
-	FVector Vector3() const
-	{
-		return FVector(x, y, z);
 	}
 
 	FVector4 operator+(const FVector4& rhs) const
@@ -224,7 +265,14 @@ struct FVector4
 		return *this;
 	}
 
-	FVector4 operator*(const FMatrix& matrix) const;
+	FVector4& operator/=(float scalar)
+	{
+		x /= scalar;
+		y /= scalar;
+		z /= scalar;
+		w /= scalar;
+		return *this;
+	}
 };
 
 struct FMatrix
@@ -299,6 +347,73 @@ struct FMatrix
 		return result;
 	}
 
+	FMatrix GetInverse() const
+	{
+		// Left side: original matrix M, Right side: identity matrix
+		float temp[4][8];
+		for (int32 i = 0; i < 4; i++)
+		{
+			for (int32 j = 0; j < 4; j++)
+			{
+				temp[i][j] = M[i][j];
+				temp[i][j + 4] = (i == j) ? 1.0f : 0.0f;
+			}
+		}
+
+		for (int32 col = 0; col < 4; col++)
+		{
+			// Find the pivot row
+			int32 pivot = col;
+			for (int32 row = col + 1; row < 4; row++)
+			{
+				if (abs(temp[row][col]) > abs(temp[pivot][col]))
+				{
+					pivot = row;
+				}
+			}
+
+			if (abs(temp[pivot][col]) < 1e-6f)
+			{
+				// Matrix is singular, cannot invert
+				return GetIdentity();
+			}
+
+			for (int32 j = 0; j < 8; j++)
+			{
+				std::swap(temp[col][j], temp[pivot][j]);
+			}
+
+			// Normalize the pivot row
+			float divisio = temp[col][col];
+			for (int32 j = 0; j < 8; j++)
+			{
+				temp[col][j] /= divisio;
+			}
+
+			// Eliminate the current column in other rows
+			for (int32 row = 0; row < 4; row++)
+			{
+				if (row == col)
+				{
+					continue;
+				}
+
+				float factor = temp[row][col];
+				for (int32 j = 0; j < 8; j++)
+				{
+					temp[row][j] -= factor * temp[col][j];
+				}
+			}
+		}
+
+		return FMatrix(
+			FVector4(temp[0][4], temp[0][5], temp[0][6], temp[0][7]),
+			FVector4(temp[1][4], temp[1][5], temp[1][6], temp[1][7]),
+			FVector4(temp[2][4], temp[2][5], temp[2][6], temp[2][7]),
+			FVector4(temp[3][4], temp[3][5], temp[3][6], temp[3][7])
+		);
+	}
+
 	static FMatrix GetIdentity()
 	{
 		return FMatrix(
@@ -315,22 +430,82 @@ struct FMatrix
 	}
 };
 
-inline FVector4 FVector4::operator*(const FMatrix& matrix) const
+inline static FVector4 operator*(const FVector4& vec, const FMatrix& mat)
 {
-	return FVector4(
-		x * matrix.M[0][0] + y * matrix.M[1][0] + z * matrix.M[2][0] + w * matrix.M[3][0],
-		x * matrix.M[0][1] + y * matrix.M[1][1] + z * matrix.M[2][1] + w * matrix.M[3][1],
-		x * matrix.M[0][2] + y * matrix.M[1][2] + z * matrix.M[2][2] + w * matrix.M[3][2],
-		x * matrix.M[0][3] + y * matrix.M[1][3] + z * matrix.M[2][3] + w * matrix.M[3][3]);
+	FVector4 result;
+	result.x = vec.x * mat.M[0][0] + vec.y * mat.M[1][0] + vec.z * mat.M[2][0] + vec.w * mat.M[3][0];
+	result.y = vec.x * mat.M[0][1] + vec.y * mat.M[1][1] + vec.z * mat.M[2][1] + vec.w * mat.M[3][1];
+	result.z = vec.x * mat.M[0][2] + vec.y * mat.M[1][2] + vec.z * mat.M[2][2] + vec.w * mat.M[3][2];
+	result.w = vec.x * mat.M[0][3] + vec.y * mat.M[1][3] + vec.z * mat.M[2][3] + vec.w * mat.M[3][3];
+	return result;
 }
 
 struct FRay
 {
 	FVector Origin;
 	FVector Direction;
+
+	FRay() = default;
+
+	FRay(const FVector& InOrigin, const FVector& InDirection)
+		: Origin(InOrigin)
+		, Direction(InDirection)
+	{
+	}
+
+	static bool CheckAABB(FRay LocalRay, FVector MinVector, FVector MaxVector)
+	{
+		FVector InverseDirection(1.0f / LocalRay.Direction.x, 1.0f / LocalRay.Direction.y, 1.0f / LocalRay.Direction.z);
+
+		float Enter = (MinVector.x - LocalRay.Origin.x) * InverseDirection.x;
+		float Exit = (MaxVector.x - LocalRay.Origin.x) * InverseDirection.x;
+
+		if (Enter > Exit)
+			std::swap(Enter, Exit);
+
+		float TempEnter = (MinVector.y - LocalRay.Origin.y) * InverseDirection.y;
+		float TempExit = (MaxVector.y - LocalRay.Origin.y) * InverseDirection.y;
+
+		if (TempEnter > TempExit)
+			std::swap(TempEnter, TempExit);
+
+		Enter = TempEnter > Enter ? TempEnter : Enter;
+		Exit = TempExit < Exit ? TempExit : Exit;
+
+		TempEnter = (MinVector.z - LocalRay.Origin.z) * InverseDirection.z;
+		TempExit = (MaxVector.z - LocalRay.Origin.z) * InverseDirection.z;
+
+		if (TempEnter > TempExit)
+			std::swap(TempEnter, TempExit);
+
+		Enter = TempEnter > Enter ? TempEnter : Enter;
+		Exit = TempExit < Exit ? TempExit : Exit;
+
+		if (Enter > Exit || Exit < 0)
+		{
+			return (false);
+		}
+		return (true);
+	}
+};
+
+struct FTriangle
+{
+	FVector P0;
+	FVector P1;
+	FVector P2;
+
+	FTriangle(const FVector& InP0, const FVector& InP1, const FVector& InP2)
+		: P0(InP0)
+		, P1(InP1)
+		, P2(InP2)
+	{
+	}
 };
 
 static const FVector Front = FVector(1.0f, 0.0f, 0.0f);
+static const FVector Right = FVector(0.0f, 1.0f, 0.0f);
+static const FVector Up = FVector(0.0f, 0.0f, 1.0f);
 
 struct FVertexSimple
 {

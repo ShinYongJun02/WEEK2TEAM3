@@ -2,6 +2,8 @@
 
 #include <fstream>
 #include <sstream>
+#include <cstdlib>
+#include <cctype>
 
 #include "Core.h"
 

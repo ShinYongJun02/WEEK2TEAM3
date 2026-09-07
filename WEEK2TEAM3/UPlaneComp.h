@@ -5,23 +5,12 @@
 
 class UPlaneComp : public UPrimitiveComponent
 {
-	// scale 1.0 기준
-	float halfX = 1.0f;
-	float halfY = 1.0f;
+	GENERATED_BODY(UPlaneComp, UPrimitiveComponent)
 
 public:
-	DECLARE_CLASS(UPlaneComp, UPrimitiveComponent)
+	UPlaneComp() = default;
 
-	//bool IntersectLocal(const FRay& localRay, float& outT) const
-	//{
-	//	if (localRay.Origin.z <= 0.0f || localRay.Direction.z >= 0.0f) return false;
+	void Initialize(UResourceManager& ResourceManager) override;
 
-	//	float t = -localRay.Origin.z / localRay.Direction.z;
-	//	FVector z0 = localRay.Origin + localRay.Direction * t;
-
-	//	if (z0.x <-halfX || z0.x > halfX || z0.y < -halfY || z0.y > halfY) return false;
-
-	//	outT = t;
-	//	return true;
-	//}
+	bool CheckIntersection(const FRay& Ray) const override;
 };

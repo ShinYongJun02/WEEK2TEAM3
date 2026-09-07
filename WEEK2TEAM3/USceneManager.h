@@ -4,41 +4,54 @@
 
 #include "UObject.h"
 #include "USceneComponent.h"
-#include "FJsonParser.h"
+#include "UPrimitiveComponent.h"
 #include "UResourceManager.h"
+#include "FJsonParser.h"
 
 class USceneManager
 {
 public:
-	static bool SaveScene(uint32 Version, FUUID NextUUID)
+	static constexpr uint32 SceneVersion = 1;
+
+	static bool SaveScene(const FString& Path = "Sample.Scene")
 	{
-		std::ofstream out("Sample.Scene");
-		if (!out.is_open()) return false;
-
-		out << "{ \"Version\" : " << Version << ",\n";
-		out << "\t\"NextUUID\" : \"" << NextUUID.A << "-" << NextUUID.B << "-" << NextUUID.C << "-" << NextUUID.D << "\",\n";
-		out << "\t\"Primitives\" : {\n";
-
-		for (const auto& obj : GUObjectArray)
+		std::ofstream Out(Path);
+		if (!Out.is_open())
 		{
-			const USceneComponent* comp = static_cast<const USceneComponent*>(obj);
-			if (obj->InternalIndex != 0)
-			{
-				out << ",\n";
-			}
-			out << "\t\t\"" << obj->UUID.A << "-" << obj->UUID.B << "-" << obj->UUID.C << "-" << obj->UUID.D << "\" : {\n";
-			out << "\t\t\"Location\" : [";
-			out << comp->RelativeLocation.x << ", " << comp->RelativeLocation.y << ", " << comp->RelativeLocation.z << "],\n";
-			out << "\t\t\"Rotation\" : [";
-			out << comp->RelativeRotation.x << ", " << comp->RelativeRotation.y << ", " << comp->RelativeRotation.z << "],\n";
-			out << "\t\t\"Scale\" : [";
-			out << comp->RelativeScale3D.x << ", " << comp->RelativeScale3D.y << ", " << comp->RelativeScale3D.z << "],\n";
-			out << "\t\t\"Type\" : \"" << comp->GetClass()->GetName() << "\"\n";
-			out << "\t\t}";
+			return false;
 		}
 
-		out << "\n\t}\n";
-		out << "}\n";
+		Out << "{\n";
+		Out << "\t\"Version\" : " << SceneVersion << ",\n";
+		Out << "\t\"NextUUID\" : \"" << UEngineStatics::GetUUID().ToString() << "\",\n";
+		Out << "\t\"Primitives\" : {\n";
+
+		bool bFirst = true;
+		for (const UObject* Object : GUObjectArray)
+		{
+			if (!Object->IsA<UPrimitiveComponent>())
+			{
+				continue;
+			}
+
+			const USceneComponent* Component = static_cast<const USceneComponent*>(Object);
+
+			if (!bFirst)
+			{
+				Out << ",\n";
+			}
+			bFirst = false;
+
+			Out << "\t\t\"" << Object->UUID.ToString() << "\" : {\n";
+			WriteVector(Out, "Location", Component->RelativeLocation);
+			WriteVector(Out, "Rotation", Component->RelativeRotation);
+			WriteVector(Out, "Scale", Component->RelativeScale3D);
+			Out << "\t\t\t\"Type\" : \"" << Object->GetClass()->TypeName << "\"\n";
+			Out << "\t\t}";
+		}
+
+		Out << "\n\t}\n";
+		Out << "}\n";
 
 		return true;
 	}
@@ -48,48 +61,94 @@ public:
 		FJsonParser Parser;
 		FJsonValue Root;
 
-		if (!Parser.ParseFile(Path, Root)) return false;
+		if (!Parser.ParseFile(Path, Root))
+		{
+			return false;
+		}
 
-		const FJsonValue* VersionVal = Root.Find("Version");
-		if (!VersionVal || VersionVal->Type != FJsonValue::EType::Number) return false;
-		/*if (VersionVal->AsUInt() != 1) return false;*/
+		// 파서는 문법만 본다. 의미 검증은 여기서 한다.
+		const FJsonValue* VersionValue = Root.Find("Version");
+		if (!VersionValue || VersionValue->Type != FJsonValue::EType::Number)
+		{
+			return false;
+		}
+		if (VersionValue->AsUInt() != SceneVersion)
+		{
+			return false;
+		}
 
-		const FJsonValue* NextUUIDStr = Root.Find("NextUUID");
-		if (!NextUUIDStr || NextUUIDStr->Type != FJsonValue::EType::String) return false;
-		// Next UUID 정보 업데이트 ?
-
-		const FJsonValue* Prims = Root.Find("Primitives");
-		if (!Prims || Prims->Type != FJsonValue::EType::Block) return false;
+		const FJsonValue* PrimitivesValue = Root.Find("Primitives");
+		if (!PrimitivesValue || PrimitivesValue->Type != FJsonValue::EType::Block)
+		{
+			return false;
+		}
 
 		ClearScene();
 
-		for (const auto& [UUIDStr, Obj] : Prims->Block)
+		for (const TPair<FString, FJsonValue>& Member : PrimitivesValue->Block)
 		{
-			const FJsonValue* TypeVal = Obj.Find("Type");
-			if (!TypeVal || TypeVal->Type != FJsonValue::EType::String) continue;
-
-			UClass* Cls = UClass::FindClass(TypeVal->String);
-			if (!Cls || !Cls->IsChildOf(USceneComponent::StaticClass())) continue;
-
-			auto* Comp = static_cast<USceneComponent*>(NewObject(Cls));
-			if (const FJsonValue* V = Obj.Find("Location")) V->AsVector(Comp->RelativeLocation);
-			if (const FJsonValue* V = Obj.Find("Rotation")) V->AsVector(Comp->RelativeRotation);
-			if (const FJsonValue* V = Obj.Find("Scale"))    V->AsVector(Comp->RelativeScale3D);
-			
-			// UUID 복구? 
-
-			if (auto* Prim = dynamic_cast<UPrimitiveComponent*>(Comp))
+			const FJsonValue& ObjectValue = Member.second;
+			if (ObjectValue.Type != FJsonValue::EType::Block)
 			{
-				static const TMap<FString, FString> MeshKeys = {
-					{ "UCubeComp",   "Cube"   },
-					{ "USphereComp", "Sphere" },
-					{ "UPlaneComp",  "Plane"  },
-				};
-				auto it = MeshKeys.find(TypeVal->String);
-				if (it != MeshKeys.end()) Prim->StaticMesh = ResourceManager.GetStaticMesh(it->second);
+				continue;
+			}
+
+			const FJsonValue* TypeValue = ObjectValue.Find("Type");
+			if (!TypeValue || TypeValue->Type != FJsonValue::EType::String)
+			{
+				continue;
+			}
+
+			const UClass* ClassType = FindClass(TypeValue->String);
+			if (!ClassType || !ClassType->IsChildOf(UPrimitiveComponent::StaticClass()))
+			{
+				continue;
+			}
+
+			// 추상 클래스면 CreateObject 가 nullptr 을 돌려준다.
+			UObject* Object = FObjectFactory::ConstructObject(ClassType);
+			if (!Object)
+			{
+				continue;
+			}
+
+			UPrimitiveComponent* Primitive = static_cast<UPrimitiveComponent*>(Object);
+			Primitive->Initialize(ResourceManager);
+
+			if (const FJsonValue* Value = ObjectValue.Find("Location"))
+			{
+				Value->AsVector(Primitive->RelativeLocation);
+			}
+			if (const FJsonValue* Value = ObjectValue.Find("Rotation"))
+			{
+				Value->AsVector(Primitive->RelativeRotation);
+			}
+			if (const FJsonValue* Value = ObjectValue.Find("Scale"))
+			{
+				Value->AsVector(Primitive->RelativeScale3D);
 			}
 		}
 
 		return true;
+	}
+
+	// 카메라처럼 GUObjectArray 밖에서 관리되는 객체를 건드리지 않도록
+	// 프리미티브만 지운다. 소멸자가 swap-remove 를 하므로 뒤에서부터 돈다.
+	static void ClearScene()
+	{
+		for (int32 Index = (int32)GUObjectArray.size() - 1; Index >= 0; --Index)
+		{
+			if (GUObjectArray[Index]->IsA<UPrimitiveComponent>())
+			{
+				delete GUObjectArray[Index];
+			}
+		}
+	}
+
+private:
+	static void WriteVector(std::ofstream& Out, const char* Key, const FVector& Value)
+	{
+		Out << "\t\t\t\"" << Key << "\" : ["
+			<< Value.x << ", " << Value.y << ", " << Value.z << "],\n";
 	}
 };
