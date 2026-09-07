@@ -18,6 +18,11 @@ bool USphereComp::CheckIntersection(const FRay& Ray) const
 	LocalRay.Origin = FVector(LocalRayOrigin.x, LocalRayOrigin.y, LocalRayOrigin.z);
 	LocalRay.Direction = FVector(LocalRayDirection.x, LocalRayDirection.y, LocalRayDirection.z);
 
+	if (!(FRay::CheckAABB(LocalRay, StaticMesh.get()->MinVertex, StaticMesh.get()->MaxVertex)))
+	{
+		return false;
+	}
+
 	for (uint32 i = 0; i < StaticMesh->VertexCount; i += 3)
 	{
 		FTriangle Triangle{

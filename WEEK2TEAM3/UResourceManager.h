@@ -8,6 +8,8 @@ struct FStaticMesh
 {
 	ID3D11Buffer* VertexBuffer;
 	UINT VertexCount;
+	FVector MinVertex;
+	FVector MaxVertex;
 };
 
 class UResourceManager : public UObject

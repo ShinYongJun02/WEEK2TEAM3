@@ -429,21 +429,35 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		ImGui::Begin("Outliner");
 		
 		UObject* TempObject;
-		UPrimitiveComponent* prim;
-		for (int i = 0; i < GUObjectArray.size(); i++)
+		UPrimitiveComponent* Primative;
+		for (UObject* obj : GUObjectArray)
 		{
-			TempObject = GUObjectArray[i];
-
-			prim = dynamic_cast<UPrimitiveComponent*>(TempObject);
-			if (!prim) continue;
-
 			char label[64];
-			sprintf_s(label, "Object_%s", TempObject->UUID.ToString().c_str());
 
-			bool isSelected = (SelectedObjectIndex == prim->InternalIndex);
-			if (ImGui::Selectable(label, isSelected))
+			if (obj->IsA<UCubeComp>())
 			{
-				SelectedObjectIndex = prim->InternalIndex;
+				Primative = static_cast<UCubeComp*>(obj);
+				sprintf_s(label, "Cube_%s", Primative->UUID.ToString().c_str());
+			}
+			else if (obj->IsA<USphereComp>())
+			{
+				Primative = static_cast<USphereComp*>(obj);
+				sprintf_s(label, "Sphere_%s", Primative->UUID.ToString().c_str());
+			}
+			else if (obj->IsA<UPlaneComp>())
+			{
+				Primative = static_cast<UPlaneComp*>(obj);
+				sprintf_s(label, "Plane_%s", Primative->UUID.ToString().c_str());
+			}
+			else
+			{
+				continue;
+			}
+
+			bool bIsSelected = (SelectedObjectIndex == Primative->InternalIndex);
+			if (ImGui::Selectable(label, bIsSelected))
+			{
+				SelectedObjectIndex = Primative->InternalIndex;
 			}
 		}
 		ImGui::End();
@@ -482,6 +496,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				}
 			}
 		}
+
+
 
 		ImGui::Begin("Details Panel");
 		

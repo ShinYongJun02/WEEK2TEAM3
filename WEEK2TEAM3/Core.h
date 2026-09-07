@@ -448,6 +448,41 @@ struct FRay
 		, Direction(InDirection)
 	{
 	}
+
+	static bool CheckAABB(FRay LocalRay, FVector MinVector, FVector MaxVector)
+	{
+		FVector InverseDirection(1.0f / LocalRay.Direction.x, 1.0f / LocalRay.Direction.y, 1.0f / LocalRay.Direction.z);
+
+		float Enter = (MinVector.x - LocalRay.Origin.x) * InverseDirection.x;
+		float Exit = (MaxVector.x - LocalRay.Origin.x) * InverseDirection.x;
+
+		if (Enter > Exit)
+			std::swap(Enter, Exit);
+
+		float TempEnter = (MinVector.y - LocalRay.Origin.y) * InverseDirection.y;
+		float TempExit = (MaxVector.y - LocalRay.Origin.y) * InverseDirection.y;
+
+		if (TempEnter > TempExit)
+			std::swap(TempEnter, TempExit);
+
+		Enter = TempEnter > Enter ? TempEnter : Enter;
+		Exit = TempExit < Exit ? TempExit : Exit;
+
+		TempEnter = (MinVector.z - LocalRay.Origin.z) * InverseDirection.z;
+		TempExit = (MaxVector.z - LocalRay.Origin.z) * InverseDirection.z;
+
+		if (TempEnter > TempExit)
+			std::swap(TempEnter, TempExit);
+
+		Enter = TempEnter > Enter ? TempEnter : Enter;
+		Exit = TempExit < Exit ? TempExit : Exit;
+
+		if (Enter > Exit || Exit < 0)
+		{
+			return (false);
+		}
+		return (true);
+	}
 };
 
 struct FTriangle
