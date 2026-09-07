@@ -8,6 +8,9 @@
 #include "USphereComp.h"
 #include "UPlaneComp.h"
 #include "UObjectAllocator.h"
+#include "FConsoleWindow.h"
+#include "FLogger.h"
+#include "Helper.h"
 
 // 화면 경계
 const float leftBorder = -1.0f;
@@ -253,8 +256,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	bool usePerspectiveCamera = true;
 
+	FConsoleWindow consoleWindow;
+
 	ImGuizmo::OPERATION TrsMode = ImGuizmo::TRANSLATE;
 	ImGuizmo::MODE WlMode = ImGuizmo::WORLD;
+
+	UE_LOG(Test, Info, "Game Tech Lab Start!");
+	UE_LOG(Test, Info, "This is long message This is long message This is long message This is long message This is long message This is long message This is long message This is long message This is long message This is long message");
+	UE_LOG(Test, Warning, "This is a warning message.");
+	UE_LOG(Test, Error, "This is an error message.");
 
 	while (bIsExit == false)
 	{
