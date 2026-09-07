@@ -21,7 +21,7 @@ void SetMinMaxVertex(TSharedPtr<FStaticMesh>& StaticMesh, FVertex Vertex[])
 
 	for (int i = 1; i < StaticMesh->VertexCount; i++)
 	{
-		if (StaticMesh->MinVertex.x > Vertex[i].y)
+		if (StaticMesh->MinVertex.x > Vertex[i].x)
 		{
 			StaticMesh->MinVertex.x = Vertex[i].x;
 		}
