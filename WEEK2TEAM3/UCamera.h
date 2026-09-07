@@ -52,7 +52,7 @@ public:
 			FVector4(0.0f, 0.0f, -nearZ * r, 0.0f));
 	}
 
-	// 카메라 회전, 오브젝트 피킹, W/S 이동 수정 필요.
+	// 카메라 회전, 오브젝트 피킹, W/S 이동 수정 필요. + 기즈모
 	FMatrix GetOrthogonalMatrix(float aspect) const
 	{
 		float orthoY = orthoX / aspect;
