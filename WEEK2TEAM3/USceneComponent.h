@@ -78,19 +78,19 @@ public:
 		return GetScaleMatrix() * GetRotationMatrix() * GetTranslationMatrix();
 	}
 
-	FVector GetForward()
+	FVector GetForward() const
 	{
 		FMatrix R = GetRotationMatrix();
 		return FVector(R.M[0][0], R.M[0][1], R.M[0][2]);
 	}
 
-	FVector GetRight()
+	FVector GetRight() const
 	{
 		FMatrix R = GetRotationMatrix();
 		return FVector(R.M[1][0], R.M[1][1], R.M[1][2]);
 	}
 
-	FVector GetUp()
+	FVector GetUp() const
 	{
 		FMatrix R = GetRotationMatrix();
 		return FVector(R.M[2][0], R.M[2][1], R.M[2][2]);

@@ -2,12 +2,24 @@
 
 #include "Core.h"
 #include "FVertex.h"
+#include "Helper.h"
+#include "URenderPipeline.h"
 
 class URenderer
 {
 	struct FConstants
 	{
 		FMatrix Matrix;
+	};
+
+	struct FLIne2DConstants
+	{
+		FMatrix Projection;
+		FVector4 Color;
+		FVector2 Start;
+		FVector2 End;
+		float Thickness;
+		float Padding[3];
 	};
 
 public:
@@ -23,23 +35,14 @@ public:
 	ID3D11Texture2D* DeptStencilBuffer = nullptr;
 	ID3D11DepthStencilView* DSV = nullptr;
 
-	// CreateRasterizerState
-	ID3D11RasterizerState* RasterizerState = nullptr;
-
-	// CreateShader
-	ID3D11VertexShader* SimpleVertexShader = nullptr;
-	ID3D11PixelShader* SimplePixelShader = nullptr;
-	ID3D11InputLayout* SimpleInputLayout = nullptr;
-
-	// CreateConstantBuffer
-	ID3D11Buffer* ModelConstantBuffer = nullptr;
-	ID3D11Buffer* ViewConstantBuffer = nullptr;
+	TSharedPtr<URenderPipeline> DefaultPipeline;
+	TSharedPtr<URenderPipeline> Render2DPipeline;
 
 	// values
 	UINT Width, Height;
 	D3D11_VIEWPORT ViewportInfo;
+	FMatrix Projection2D;
 	FLOAT ClearColor[4] = { 0.025f, 0.025f, 0.025f, 1.0f };
-	unsigned int Stride;
 
 public:
 	void Create(HWND hWindow)
@@ -47,12 +50,25 @@ public:
 		CreateDeviceAndSwapChain(hWindow);
 		CreateFrameBuffer();
 		CreateDepthStencilBuffer();
-		CreateRasterizerState();
+
+		DefaultPipeline = MakeShared<URenderPipeline>(Device, DeviceContext);
+		DefaultPipeline->SetCullMode(D3D11_CULL_BACK);
+		DefaultPipeline->SetDepthStencilState(true, true);
+		DefaultPipeline->SetShader("Assets/Shaders/ShaderW0.hlsl");
+		DefaultPipeline->AddConstantBuffer<FConstants>();
+		DefaultPipeline->AddConstantBuffer<FConstants>();
+
+		Render2DPipeline = MakeShared<URenderPipeline>(Device, DeviceContext);
+		Render2DPipeline->SetCullMode(D3D11_CULL_NONE);
+		Render2DPipeline->SetDepthStencilState(false, false);
+		Render2DPipeline->SetShader("Assets/Shaders/Line2D.hlsl");
+		Render2DPipeline->AddConstantBuffer<FLIne2DConstants>();
 	}
 
 	void Release()
 	{
-		ReleaseRasterizerState();
+		Render2DPipeline.reset();
+		DefaultPipeline.reset();
 		DeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
 		DSV->Release();
 		DeptStencilBuffer->Release();
@@ -84,6 +100,7 @@ public:
 		Width = swapchaindesc.BufferDesc.Width;
 		Height = swapchaindesc.BufferDesc.Height;
 		ViewportInfo = { 0.0f, 0.0f, (float)Width, (float)Height, 0.0f, 1.0f };
+		Projection2D = Ortho(0.f, Width, Height, 0.f, 0.0f, 1.0f);
 	}
 
 	void ReleaseDeviceAndSwapChain()
@@ -158,108 +175,6 @@ public:
 		Device->CreateDepthStencilView(DeptStencilBuffer, &dsvDesc, &DSV);
 	}
 
-	void CreateRasterizerState()
-	{
-		D3D11_RASTERIZER_DESC rasterizerdesc = {};
-		rasterizerdesc.FillMode = D3D11_FILL_SOLID;
-		rasterizerdesc.CullMode = D3D11_CULL_BACK;
-
-		Device->CreateRasterizerState(&rasterizerdesc, &RasterizerState);
-	}
-
-	void ReleaseRasterizerState()
-	{
-		if (RasterizerState)
-		{
-			RasterizerState->Release();
-			RasterizerState = nullptr;
-		}
-	}
-
-	void CreateShader()
-	{
-		ID3DBlob* vertexshaderCSO;
-		ID3DBlob* pixelshaderCSO;
-
-		D3DCompileFromFile(
-			L"Assets/Shaders/ShaderW0.hlsl", nullptr, nullptr,
-			"mainVS", "vs_5_0", 0, 0, &vertexshaderCSO, nullptr);
-
-		Device->CreateVertexShader(
-			vertexshaderCSO->GetBufferPointer(),
-			vertexshaderCSO->GetBufferSize(), nullptr, &SimpleVertexShader);
-
-		D3DCompileFromFile(
-			L"Assets/Shaders/ShaderW0.hlsl", nullptr, nullptr, "mainPS",
-			"ps_5_0", 0, 0, &pixelshaderCSO, nullptr);
-
-		Device->CreatePixelShader(
-			pixelshaderCSO->GetBufferPointer(),
-			pixelshaderCSO->GetBufferSize(), nullptr, &SimplePixelShader);
-
-		D3D11_INPUT_ELEMENT_DESC layout[] =
-		{
-			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-			{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		};
-
-		Device->CreateInputLayout(
-			layout, ARRAYSIZE(layout), vertexshaderCSO->GetBufferPointer(),
-			vertexshaderCSO->GetBufferSize(), &SimpleInputLayout);
-
-		Stride = sizeof(FVertex);
-
-		vertexshaderCSO->Release();
-		pixelshaderCSO->Release();
-	}
-
-	void ReleaseShader()
-	{
-		if (SimpleInputLayout)
-		{
-			SimpleInputLayout->Release();
-			SimpleInputLayout = nullptr;
-		}
-
-		if (SimplePixelShader)
-		{
-			SimplePixelShader->Release();
-			SimplePixelShader = nullptr;
-		}
-
-		if (SimpleVertexShader)
-		{
-			SimpleVertexShader->Release();
-			SimpleVertexShader = nullptr;
-		}
-	}
-
-	void CreateConstantBuffer()
-	{
-		D3D11_BUFFER_DESC constantbufferdesc = {};
-		constantbufferdesc.ByteWidth = sizeof(FConstants) + 0xf & 0xfffffff0;
-		constantbufferdesc.Usage = D3D11_USAGE_DYNAMIC;
-		constantbufferdesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		constantbufferdesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-
-		Device->CreateBuffer(&constantbufferdesc, nullptr, &ModelConstantBuffer);
-		Device->CreateBuffer(&constantbufferdesc, nullptr, &ViewConstantBuffer);
-	}
-
-	void ReleaseConstantBuffer()
-	{
-		if (ModelConstantBuffer)
-		{
-			ModelConstantBuffer->Release();
-			ModelConstantBuffer = nullptr;
-		}
-		if (ViewConstantBuffer)
-		{
-			ViewConstantBuffer->Release();
-			ViewConstantBuffer = nullptr;
-		}
-	}
-
 	void Resize(UINT width, UINT height)
 	{
 		if (width == 0 || height == 0)
@@ -279,6 +194,7 @@ public:
 		Width = width;
 		Height = height;
 		ViewportInfo = { 0.0f, 0.0f, (float)width, (float)height, 0.0f, 1.0f };
+		Projection2D = Ortho(0.f, Width, Height, 0.f, 0.0f, 1.0f);
 
 		CreateFrameBuffer();
 		CreateDepthStencilBuffer();
@@ -325,6 +241,11 @@ public:
 		indexBuffer->Release();
 	}
 
+	TSharedPtr<URenderPipeline> CreateRenderPipeline()
+	{
+		return MakeShared<URenderPipeline>(Device, DeviceContext);
+	}
+
 	void Prepare()
 	{
 		DeviceContext->ClearRenderTargetView(FrameBufferRTV, ClearColor);
@@ -333,64 +254,54 @@ public:
 		DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 		DeviceContext->RSSetViewports(1, &ViewportInfo);
-		DeviceContext->RSSetState(RasterizerState);
 
 		DeviceContext->OMSetRenderTargets(1, &FrameBufferRTV, DSV);
 		DeviceContext->OMSetBlendState(nullptr, nullptr, 0xffffffff);
 	}
 
-	void PrepareShader()
-	{
-		DeviceContext->IASetInputLayout(SimpleInputLayout);
-
-		DeviceContext->VSSetShader(SimpleVertexShader, nullptr, 0);
-		if (ModelConstantBuffer)
-		{
-			DeviceContext->VSSetConstantBuffers(0, 1, &ModelConstantBuffer);
-		}
-		if (ViewConstantBuffer)
-		{
-			DeviceContext->VSSetConstantBuffers(1, 1, &ViewConstantBuffer);
-		}
-
-		DeviceContext->PSSetShader(SimplePixelShader, nullptr, 0);
-	}
-
 	void UpdateModelConstant(FMatrix model)
 	{
-		if (ModelConstantBuffer)
-		{
-			D3D11_MAPPED_SUBRESOURCE constantbufferMSR;
-
-			DeviceContext->Map(ModelConstantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &constantbufferMSR);
-			FConstants* constants = (FConstants*)constantbufferMSR.pData;
-			{
-				constants->Matrix = model;
-			}
-			DeviceContext->Unmap(ModelConstantBuffer, 0);
-		}
+		DefaultPipeline->UpdateConstantBuffer(0, FConstants{ model });
 	}
 
 	void UpdateViewConstant(FMatrix view)
 	{
-		if (ViewConstantBuffer)
-		{
-			D3D11_MAPPED_SUBRESOURCE constantbufferMSR;
-
-			DeviceContext->Map(ViewConstantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &constantbufferMSR);
-			FConstants* constants = (FConstants*)constantbufferMSR.pData;
-			{
-				constants->Matrix = view;
-			}
-			DeviceContext->Unmap(ViewConstantBuffer, 0);
-		}
+		DefaultPipeline->UpdateConstantBuffer(1, FConstants{ view });
 	}
 
-	void RenderPrimitive(ID3D11Buffer* pBuffer, UINT numVertices)
+	void RenderPrimitive(const TSharedPtr<URenderPipeline>& pipeline, ID3D11Buffer* pBuffer, UINT numVertices) const
 	{
+		DeviceContext->RSSetState(pipeline->RasterizerState);
+		DeviceContext->OMSetDepthStencilState(pipeline->DepthStencilState, 0);
+		DeviceContext->IASetInputLayout(pipeline->InputLayout);
+		DeviceContext->VSSetShader(pipeline->VertexShader, nullptr, 0);
+		DeviceContext->PSSetShader(pipeline->PixelShader, nullptr, 0);
+		DeviceContext->VSSetConstantBuffers(0, pipeline->ConstantBuffers.size(), pipeline->ConstantBuffers.data());
+
 		UINT offset = 0;
-		DeviceContext->IASetVertexBuffers(0, 1, &pBuffer, &Stride, &offset);
+		DeviceContext->IASetVertexBuffers(0, 1, &pBuffer, &pipeline->Stride, &offset);
 		DeviceContext->Draw(numVertices, 0);
+	}
+
+	void RenderPrimitive(ID3D11Buffer* pBuffer, UINT numVertices) const
+	{
+		RenderPrimitive(DefaultPipeline, pBuffer, numVertices);
+	}
+
+	void RenderLine2D(const FVector2& start, const FVector2& end, const FVector4& color, float thickness = 1.0f) const
+	{
+		Render2DPipeline->UpdateConstantBuffer(0, FLIne2DConstants{ Projection2D, color, start, end, thickness });
+
+		DeviceContext->RSSetState(Render2DPipeline->RasterizerState);
+		DeviceContext->OMSetDepthStencilState(Render2DPipeline->DepthStencilState, 0);
+		DeviceContext->IASetInputLayout(nullptr);
+		DeviceContext->VSSetShader(Render2DPipeline->VertexShader, nullptr, 0);
+		DeviceContext->PSSetShader(Render2DPipeline->PixelShader, nullptr, 0);
+		DeviceContext->VSSetConstantBuffers(0, Render2DPipeline->ConstantBuffers.size(), Render2DPipeline->ConstantBuffers.data());
+
+		UINT offset = 0;
+		DeviceContext->IASetVertexBuffers(0, 0, NULL, NULL, &offset);
+		DeviceContext->Draw(6, 0);
 	}
 
 	void SwapBuffer()
@@ -398,12 +309,12 @@ public:
 		SwapChain->Present(1, 0);
 	}
 
-	inline UINT GetWidth()
+	inline UINT GetWidth() const
 	{
 		return Width;
 	}
 
-	inline UINT GetHeight()
+	inline UINT GetHeight() const
 	{
 		return Height;
 	}

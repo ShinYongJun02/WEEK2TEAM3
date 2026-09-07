@@ -100,6 +100,11 @@ static float DistanceSquared(const FVector2& a, const FVector2& b)
 	return (a - b).LengthSquared();
 }
 
+static float DistanceSquared(const FVector& a, const FVector& b)
+{
+	return (a - b).LengthSquared();
+}
+
 static bool Raycast(const FRay& ray, const FTriangle& triangle, FVector& outPoint)
 {
 	FVector E1 = triangle.P1 - triangle.P0;
@@ -139,7 +144,7 @@ static bool Raycast(const FRay& ray, const FTriangle& triangle, FVector& outPoin
 	return true;
 }
 
-static FVector2 WorldToScreen(const FVector& worldPos, const FMatrix& viewProjection, int screenWidth, int screenHeight)
+static FVector2 WorldToScreen(const FVector& worldPos, const FMatrix& viewProjection, int32 screenWidth, int32 screenHeight)
 {
 	FVector4 clipSpacePos = FVector4(worldPos.x, worldPos.y, worldPos.z, 1.0f) * viewProjection;
 
@@ -151,3 +156,96 @@ static FVector2 WorldToScreen(const FVector& worldPos, const FMatrix& viewProjec
 
 	return screenPos;
 }
+
+static bool LineSegmentIntersect(const FVector2& p0, const FVector2& p1, const FVector2& p2, const FVector2& p3, FVector2& intersection)
+{
+	float denominator = (p0.x - p1.x) * (p2.y - p3.y) - (p0.y - p1.y) * (p2.x - p3.x);
+
+	if (EpsilonEqual(denominator, 0.0f))
+	{
+		return false; // Lines are parallel or coincident
+	}
+
+	float t = ((p0.x - p2.x) * (p2.y - p3.y) - (p0.y - p2.y) * (p2.x - p3.x)) / denominator;
+	float u = ((p0.x - p2.x) * (p0.y - p1.y) - (p0.y - p2.y) * (p0.x - p1.x)) / denominator;
+
+	if (t < 0.f || t > 1.f || u < 0.f || u > 1.f)
+	{
+		return false;
+	}
+
+	intersection.x = p0.x + t * (p1.x - p0.x);
+	intersection.y = p0.y + t * (p1.y - p0.y);
+
+	return true;
+}
+
+static float PointToLineSegmentDistanceSquared(const FVector2& point, const FVector2& lineStart, const FVector2& lineEnd)
+{
+	FVector2 lineVec = lineEnd - lineStart;
+
+	float lineLength = lineVec.Length();
+	if (lineLength == 0.f)
+	{
+		return DistanceSquared(point, lineStart);
+	}
+	lineVec /= lineLength;
+
+	FVector2 startToPoint = point - lineStart;
+	float projectedLength = Dot(startToPoint, lineVec);
+
+	if (projectedLength < 0.f)
+	{
+		projectedLength = 0.f;
+	}
+	else if (projectedLength > lineLength)
+	{
+		projectedLength = lineLength;
+	}
+
+	FVector2 closest = lineStart + lineVec * projectedLength;
+	return DistanceSquared(point, closest);
+}
+
+static float PointToLineSegmentDistanceSquared(const FVector& point, const FVector& lineStart, const FVector& lineEnd)
+{
+	FVector lineVec = lineEnd - lineStart;
+
+	float lineLength = lineVec.Length();
+	if (lineLength == 0.f)
+	{
+		return DistanceSquared(point, lineStart);
+	}
+
+	lineVec /= lineLength;
+
+	FVector startToPoint = point - lineStart;
+	float projectedLength = Dot(startToPoint, lineVec);
+
+	if (projectedLength < 0.f)
+	{
+		projectedLength = 0.f;
+	}
+	else if (projectedLength > lineLength)
+	{
+		projectedLength = lineLength;
+	}
+
+	FVector closest = lineStart + lineVec * projectedLength;
+	return DistanceSquared(point, closest);
+}
+
+static void GenerateCircleVertices(const std::function<void(int32 index, const FVector2&)>& handler, const FVector2& center, float radius, int segments)
+{
+	const float step = 2.0f * PI / static_cast<float>(segments);
+
+	for (int32 i = 0; i < segments; ++i)
+	{
+		float angle = step * static_cast<float>(i);
+		float x = center.x + radius * cos(angle);
+		float y = center.y + radius * sin(angle);
+
+		handler(i, FVector2(x, y));
+	}
+}
+

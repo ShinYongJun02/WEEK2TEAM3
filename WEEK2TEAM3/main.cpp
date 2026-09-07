@@ -9,6 +9,7 @@
 #include "UPlaneComp.h"
 #include "UObjectAllocator.h"
 #include "FConsoleWindow.h"
+#include "UGizmo.h"
 #include "FLogger.h"
 #include "Helper.h"
 
@@ -199,8 +200,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// 렌더러 초기화
 	URenderer renderer;
 	renderer.Create(hWnd);
-	renderer.CreateShader();
-	renderer.CreateConstantBuffer();
 
 	FUObjectAllocator::Initialize(1024 * 1024 * 100); // 100MB
 
@@ -256,10 +255,28 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	bool usePerspectiveCamera = true;
 
+	struct FOutlineConstant
+	{
+		FMatrix Model;
+		FMatrix ViewProjection;
+		FVector OutlineColor;
+		float Padding[3];
+	};
+
+	TSharedPtr<URenderPipeline> outlinePipeline = renderer.CreateRenderPipeline();
+	outlinePipeline->SetCullMode(D3D11_CULL_NONE);
+	outlinePipeline->SetDepthStencilState(true, false);
+	outlinePipeline->SetShader("Assets/Shaders/Outline.hlsl");
+	outlinePipeline->AddConstantBuffer<FOutlineConstant>();
+
 	FConsoleWindow consoleWindow;
+	UGizmo gizmo(inputContext);
 
 	ImGuizmo::OPERATION TrsMode = ImGuizmo::TRANSLATE;
 	ImGuizmo::MODE WlMode = ImGuizmo::WORLD;
+
+	bool CurrentGizmoWorldMode = true;
+	EGizmoOperation CurrentGizmoOperation = EGizmoOperation::Translate;
 
 	UE_LOG(Test, Info, "Game Tech Lab Start!");
 	UE_LOG(Test, Info, "This is long message This is long message This is long message This is long message This is long message This is long message This is long message This is long message This is long message This is long message");
@@ -349,24 +366,28 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		if (inputContext.IsKeyDown('Z'))
 		{
 			TrsMode = ImGuizmo::TRANSLATE;
+			CurrentGizmoOperation = EGizmoOperation::Translate;
 		}
 		else if (inputContext.IsKeyDown('X'))
 		{
 			TrsMode = ImGuizmo::ROTATE;
+			CurrentGizmoOperation = EGizmoOperation::Rotate;
 		}
 		else if (inputContext.IsKeyDown('C'))
 		{
 			TrsMode = ImGuizmo::SCALE;
+			CurrentGizmoOperation = EGizmoOperation::Scale;
 		}
 		else if (inputContext.IsKeyDown('V'))
 		{
 			WlMode = ImGuizmo::WORLD;
+			CurrentGizmoWorldMode = true;
 		}
 		else if (inputContext.IsKeyDown('B'))
 		{
 			WlMode = ImGuizmo::LOCAL;
+			CurrentGizmoWorldMode = false;
 		}
-
 
 		// 마우스 추적
 		POINT temp;
@@ -405,65 +426,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		FMatrix viewProjection = view * projection;
 		FMatrix invViewProjection = viewProjection.GetInverse();
 
-		// Transform
-		renderer.Prepare();
-		renderer.PrepareShader();
-
-		renderer.UpdateViewConstant(viewProjection);
-
-		for (UObject* obj : GUObjectArray)
-		{
-			if (obj->IsA<UPrimitiveComponent>())
-			{
-				UPrimitiveComponent* prim = static_cast<UPrimitiveComponent*>(obj);
-				prim->Render(renderer);
-			}
-		}
-
-		ImGui_ImplDX11_NewFrame();
-		ImGui_ImplWin32_NewFrame();
-		ImGui::NewFrame();
-		ImGuizmo::BeginFrame();
-
-		// ImGui
-		ImGui::Begin("Outliner");
-		
-		UObject* TempObject;
-		UPrimitiveComponent* Primative;
-		for (UObject* obj : GUObjectArray)
-		{
-			char label[64];
-
-			if (obj->IsA<UCubeComp>())
-			{
-				Primative = static_cast<UCubeComp*>(obj);
-				sprintf_s(label, "Cube_%s", Primative->UUID.ToString().c_str());
-			}
-			else if (obj->IsA<USphereComp>())
-			{
-				Primative = static_cast<USphereComp*>(obj);
-				sprintf_s(label, "Sphere_%s", Primative->UUID.ToString().c_str());
-			}
-			else if (obj->IsA<UPlaneComp>())
-			{
-				Primative = static_cast<UPlaneComp*>(obj);
-				sprintf_s(label, "Plane_%s", Primative->UUID.ToString().c_str());
-			}
-			else
-			{
-				continue;
-			}
-
-			bool bIsSelected = (SelectedObjectIndex == Primative->InternalIndex);
-			if (ImGui::Selectable(label, bIsSelected))
-			{
-				SelectedObjectIndex = Primative->InternalIndex;
-			}
-		}
-		ImGui::End();
-
-		UPrimitiveComponent* SelectedObject;
-
 		int32 mouseX = inputContext.GetMouseX();
 		int32 mouseY = inputContext.GetMouseY();
 
@@ -487,8 +449,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 					continue;
 				}
 
-				SelectedObject = static_cast<UPrimitiveComponent*>(GUObjectArray[i]);
-
+				UPrimitiveComponent* SelectedObject = static_cast<UPrimitiveComponent*>(GUObjectArray[i]);
 				if (SelectedObject->CheckIntersection(ray))
 				{
 					SelectedObjectIndex = SelectedObject->InternalIndex;
@@ -497,14 +458,63 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			}
 		}
 
+		// Transform
+		renderer.Prepare();
 
+		renderer.UpdateViewConstant(viewProjection);
+
+		for (int32 i = 0; i < GUObjectArray.size(); i++)
+		{
+			UObject* obj = GUObjectArray[i];
+
+			if (obj->IsA<UPrimitiveComponent>())
+			{
+				UPrimitiveComponent* prim = static_cast<UPrimitiveComponent*>(obj);
+				if (i == SelectedObjectIndex)
+				{
+					outlinePipeline->UpdateConstantBuffer(0, FOutlineConstant{ prim->GetModelMatrix(), viewProjection, FVector(1.f, 1.f, 1.f), 0.03f });
+					renderer.RenderPrimitive(outlinePipeline, prim->GetStaticMesh()->VertexBuffer, prim->GetStaticMesh()->VertexCount);
+				}
+				prim->Render(renderer);
+			}
+		}
+
+		ImGui_ImplDX11_NewFrame();
+		ImGui_ImplWin32_NewFrame();
+		ImGui::NewFrame();
+		ImGuizmo::BeginFrame();
+
+		// ImGui
+		consoleWindow.Draw("Debug Console", nullptr);
+
+		ImGui::Begin("Outliner");
+		
+		UObject* TempObject;
+		UPrimitiveComponent* prim;
+		for (int i = 0; i < GUObjectArray.size(); i++)
+		{
+			TempObject = GUObjectArray[i];
+
+			prim = dynamic_cast<UPrimitiveComponent*>(TempObject);
+			if (!prim) continue;
+
+			char label[64];
+			sprintf_s(label, "Object_%s", TempObject->UUID.ToString().c_str());
+
+			bool isSelected = (SelectedObjectIndex == prim->InternalIndex);
+			if (ImGui::Selectable(label, isSelected))
+			{
+				SelectedObjectIndex = prim->InternalIndex;
+			}
+		}
+		ImGui::End();
 
 		ImGui::Begin("Details Panel");
 		
 		if (SelectedObjectIndex != -1)
 		{
 			TempObject = GUObjectArray[SelectedObjectIndex];
-			SelectedObject = dynamic_cast<UPrimitiveComponent*>(TempObject);
+			UPrimitiveComponent* SelectedObject = dynamic_cast<UPrimitiveComponent*>(TempObject);
 			if (SelectedObject)
 			{
 				ImGui::DragFloat3("Translation", &SelectedObject->RelativeLocation.x, 0.1f);
@@ -518,8 +528,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		// ImGuizmo
 		if (SelectedObjectIndex != -1)
 		{
+#if 0
 			TempObject = GUObjectArray[SelectedObjectIndex];
-			SelectedObject = dynamic_cast<UPrimitiveComponent*>(TempObject);
+			UPrimitiveComponent* SelectedObject = dynamic_cast<UPrimitiveComponent*>(TempObject);
 			FMatrix Mat = SelectedObject->GetModelMatrix();
 
 			if (SelectedObject)
@@ -543,6 +554,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 					SelectedObject->RelativeScale3D = FVector(scale[0], scale[1], scale[2]);
 				}
 			}
+#else
+			UPrimitiveComponent* SelectedObject = static_cast<UPrimitiveComponent*>(GUObjectArray[SelectedObjectIndex]);
+			gizmo.SetOperation(CurrentGizmoOperation);
+			gizmo.SetWorldMode(CurrentGizmoWorldMode);
+			gizmo.Draw(*SelectedObject, viewProjection, renderer);
+#endif
 		}
 
 		ImGui::Begin("Place Actors");
@@ -641,6 +658,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		} while (elapsedTime < targetFrameTime);
 	}
 
+	outlinePipeline->Release();
+
 	resourceManager.Release();
 
 	FUObjectAllocator::Release();
@@ -650,8 +669,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	ImGui::DestroyContext();
 
 	// 렌더러 리소스 해제
-	renderer.ReleaseConstantBuffer();
-	renderer.ReleaseShader();
 	renderer.Release();
 
 	return 0;

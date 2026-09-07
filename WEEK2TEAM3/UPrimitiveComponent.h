@@ -16,6 +16,8 @@ public:
 	virtual void Render(URenderer& Renderer);
 	virtual bool CheckIntersection(const FRay& Ray) const = 0;
 
+	inline TSharedPtr<FStaticMesh> GetStaticMesh() const { return StaticMesh; }
+
 protected:
 	TSharedPtr<FStaticMesh> StaticMesh = nullptr;
 };

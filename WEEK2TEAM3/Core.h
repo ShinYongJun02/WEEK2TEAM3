@@ -73,11 +73,48 @@ struct FVector2
 		return x * x + y * y;
 	}
 
+	float Length() const
+	{
+		return sqrt(LengthSquared());
+	}
+
+	void Normalize()
+	{
+		float length = Length();
+		if (length > 0.0f)
+		{
+			x /= length;
+			y /= length;
+		}
+	}
+
+	FVector2 operator+(const FVector2& other) const
+	{
+		return FVector2(x + other.x, y + other.y);
+	}
+
 	FVector2 operator-(const FVector2& other) const
 	{
 		return FVector2(x - other.x, y - other.y);
 	}
+
+	FVector2 operator*(float scalar) const
+	{
+		return FVector2(x * scalar, y * scalar);
+	}
+
+	FVector2& operator/=(float scalar)
+	{
+		x /= scalar;
+		y /= scalar;
+		return *this;
+	}
 };
+
+inline static float Dot(const FVector2& a, const FVector2& b)
+{
+	return a.x * b.x + a.y * b.y;
+}
 
 struct FVector
 {
@@ -170,6 +207,14 @@ struct FVector
 		x *= rhs.x;
 		y *= rhs.y;
 		z *= rhs.z;
+		return *this;
+	}
+
+	FVector& operator/=(float scalar)
+	{
+		x /= scalar;
+		y /= scalar;
+		z /= scalar;
 		return *this;
 	}
 };
