@@ -9,6 +9,7 @@
 #include "UCubeComp.h"
 #include "USphereComp.h"
 #include "UPlaneComp.h"
+#include "USceneManager.h"
 
 class TWindowEventHandler {
 public:
@@ -347,10 +348,46 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		ImGui::NewFrame();
 		ImGuizmo::BeginFrame();
 
+		UObject* TempObject;
+		UPrimitiveComponent* SelectedObject;
+
+		// ImGuizmo
+		if (SelectedObjectIndex != -1)
+		{
+			if (SelectedObjectIndex >= 0 && SelectedObjectIndex < (int32)GUObjectArray.size())
+			{
+				TempObject = GUObjectArray[SelectedObjectIndex];
+				SelectedObject = dynamic_cast<UPrimitiveComponent*>(TempObject);
+				FMatrix Mat = SelectedObject->GetModelMatrix();
+
+				if (SelectedObject)
+				{
+					FMatrix model = SelectedObject->GetModelMatrix();
+					FMatrix view = camera.GetViewMatrix();
+					FMatrix projection = camera.GetProjectionMatrix(aspectRatio);
+
+					ImGuizmo::SetOrthographic(false);
+					ImGuizmo::SetRect(0.0f, 0.0f, renderer.GetWidth(), renderer.GetHeight());
+					ImGuizmo::Manipulate(view.M[0], projection.M[0], TrsMode, WlMode, model.M[0], NULL, NULL);
+
+					if (ImGuizmo::IsUsing())
+					{
+						float translation[3];
+						float rotation[3];
+						float scale[3];
+
+						ImGuizmo::DecomposeMatrixToComponents(model.M[0], translation, rotation, scale);
+
+						SelectedObject->RelativeLocation = FVector(translation[0], translation[1], translation[2]);
+						SelectedObject->RelativeRotation = FVector(-rotation[0], -rotation[1], rotation[2]);
+						SelectedObject->RelativeScale3D = FVector(scale[0], scale[1], scale[2]);
+					}
+				}
+			}
+		}
+
 		// ImGui
 		ImGui::Begin("Outliner");
-
-		UObject* TempObject;
 		UPrimitiveComponent* prim;
 		for (int i = 0; i < GUObjectArray.size(); i++)
 		{
@@ -370,56 +407,22 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		}
 		ImGui::End();
 
-		UPrimitiveComponent* SelectedObject;
-
 		ImGui::Begin("Details Panel");
-
 		if (SelectedObjectIndex != -1)
 		{
-			TempObject = GUObjectArray[SelectedObjectIndex];
-			SelectedObject = dynamic_cast<UPrimitiveComponent*>(TempObject);
-			if (SelectedObject)
+			if (SelectedObjectIndex >= 0 && SelectedObjectIndex < (int32)GUObjectArray.size())
 			{
-				ImGui::DragFloat3("Translation", &SelectedObject->RelativeLocation.x, 0.1f);
-				ImGui::DragFloat3("Rotation", &SelectedObject->RelativeRotation.x, 0.1f);
-				ImGui::DragFloat3("Scale", &SelectedObject->RelativeScale3D.x, 0.1f);
-			}
-		}
-
-		ImGui::End();
-
-		// ImGuizmo
-
-		if (SelectedObjectIndex != -1)
-		{
-			TempObject = GUObjectArray[SelectedObjectIndex];
-			SelectedObject = dynamic_cast<UPrimitiveComponent*>(TempObject);
-			FMatrix Mat = SelectedObject->GetModelMatrix();
-
-			if (SelectedObject)
-			{
-				FMatrix model = SelectedObject->GetModelMatrix();
-				FMatrix view = camera.GetViewMatrix();
-				FMatrix projection = camera.GetProjectionMatrix(aspectRatio);
-
-				ImGuizmo::SetOrthographic(false);
-				ImGuizmo::SetRect(0.0f, 0.0f, renderer.GetWidth(), renderer.GetHeight());
-				ImGuizmo::Manipulate(view.M[0], projection.M[0], TrsMode, WlMode, model.M[0], NULL, NULL);
-
-				if (ImGuizmo::IsUsing())
+				TempObject = GUObjectArray[SelectedObjectIndex];
+				SelectedObject = dynamic_cast<UPrimitiveComponent*>(TempObject);
+				if (SelectedObject)
 				{
-					float translation[3];
-					float rotation[3];
-					float scale[3];
-
-					ImGuizmo::DecomposeMatrixToComponents(model.M[0], translation, rotation, scale);
-
-					SelectedObject->RelativeLocation = FVector(translation[0], translation[1], translation[2]);
-					SelectedObject->RelativeRotation = FVector(-rotation[0], -rotation[1], rotation[2]);
-					SelectedObject->RelativeScale3D = FVector(scale[0], scale[1], scale[2]);
+					ImGui::DragFloat3("Translation", &SelectedObject->RelativeLocation.x, 0.1f);
+					ImGui::DragFloat3("Rotation", &SelectedObject->RelativeRotation.x, 0.1f);
+					ImGui::DragFloat3("Scale", &SelectedObject->RelativeScale3D.x, 0.1f);
 				}
 			}
 		}
+		ImGui::End();
 
 		ImGui::Begin("Engine Statics");
 		ImGui::Text("TotalAllocationBytes: %d", UEngineStatics::TotalAllocationBytes);
@@ -437,7 +440,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		ImGui::Begin("Place Actors");
 		ImGui::Text("FPS %.0f (%.2f ms)", ImGui::GetIO().Framerate, 1000.0f / ImGui::GetIO().Framerate);
 		ImGui::Separator();
-
 		if (ImGui::BeginCombo("Primitive", PrimitiveTypeNames[SelectedPrimitiveIndex]))
 		{
 			for (int i = 0; i < std::size(PrimitiveTypeNames); i++)
@@ -454,7 +456,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			}
 			ImGui::EndCombo();
 		}
-
 		if (ImGui::Button("Spawn", ImVec2(80, 0)))
 		{
 			for (int i = 0; i < SpawnCount; i++)
@@ -462,11 +463,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				SpawnPrimitiveByType(SelectedPrimitiveIndex, resourceManager);
 			}
 		}
-
 		ImGui::SameLine();
 		ImGui::SetNextItemWidth(150);
 		ImGui::SliderInt("Number of spawn", &SpawnCount, 1, 100);
-
 		if (ImGui::Button("Delete", ImVec2(80, 0)))
 		{
 			if (SelectedObjectIndex >= 0 && SelectedObjectIndex < (int32)GUObjectArray.size())
@@ -475,7 +474,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				SelectedObjectIndex = -1;
 			}
 		}
+		ImGui::Separator();
+		if (ImGui::Button("Save scene"))
+		{
+			USceneManager::SaveScene(1, UEngineStatics::GetUUID());
+		}
+		if (ImGui::Button("Load scene"))
+		{
+			USceneManager::LoadScene(resourceManager);
+			SelectedObjectIndex = -1;
+			SelectedObject = nullptr;
+		}
 		ImGui::End();
+
+		// 콘솔
 
 		ImGui::Render();
 		ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());

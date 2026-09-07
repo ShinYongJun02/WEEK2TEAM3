@@ -10,6 +10,7 @@
 			MakeConstructor<ClassName>()); \
         return &Instance; \
     } \
+	inline static const UClass* AutoRegister = ClassName::StaticClass(); \
 	virtual UClass* GetClass() const override { return ClassName::StaticClass(); }
 
 class UObject
@@ -43,4 +44,9 @@ inline UObject* NewObject(UClass* type)
 	obj->InternalIndex = (uint32)GUObjectArray.size();
 	GUObjectArray.push_back(obj);
 	return obj;
+}
+
+inline void ClearScene()
+{
+	while (!GUObjectArray.empty()) delete GUObjectArray.back();
 }

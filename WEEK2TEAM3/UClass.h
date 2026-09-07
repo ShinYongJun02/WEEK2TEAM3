@@ -28,9 +28,22 @@ private:
 	UClass* ParentClass = nullptr;
 	ConstructorType Constructor = nullptr;
 
+	static TMap<FString, UClass*>& Registry()
+	{
+		static TMap<FString, UClass*> R;
+		return R;
+	}
+
 public:
 	UClass(const FString& InName, UClass* InParent, ConstructorType InConstructor)
 		:ClassName(InName), ParentClass(InParent), Constructor(InConstructor) {
+		Registry()[InName] = this;
+	}
+
+	static UClass* FindClass(const FString& Name)
+	{
+		auto it = Registry().find(Name);
+		return it == Registry().end() ? nullptr : it->second;
 	}
 
 	const FString& GetName() const

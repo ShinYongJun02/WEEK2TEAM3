@@ -16,6 +16,7 @@
 #include <map>
 #include <unordered_map>
 #include <bitset>
+#include <utility>
 
 #define ASSERT(expr) if (!(expr)) { std::cerr << "Assertion failed: " << #expr << std::endl; std::abort(); }
 
@@ -24,6 +25,9 @@ typedef unsigned char uint8;
 typedef int int32;
 typedef unsigned int uint32;
 typedef unsigned long long uint64;
+
+template<typename A, typename B>
+using TPair = std::pair<A, B>;
 
 template <typename T>
 using TArray = std::vector<T>;
