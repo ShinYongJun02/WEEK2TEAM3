@@ -3,12 +3,12 @@
 #include <Core.h>
 #include <cmath>
 
+constexpr float PI = 3.14159265358979323846f;
 constexpr float Epsilon = 1e-6f;
 
 static float DegreeToRadian(float degree)
 {
-	float radian = degree * (float)acos(-1) / 180.0f;
-	return radian;
+	return degree * PI / 180.0f;
 }
 
 static bool EpsilonEqual(float a, float b, float epsilon = Epsilon)
@@ -19,6 +19,85 @@ static bool EpsilonEqual(float a, float b, float epsilon = Epsilon)
 static float Remap(float value, float inMin, float inMax, float outMin, float outMax)
 {
 	return (value - inMin) / (inMax - inMin) * (outMax - outMin) + outMin;
+}
+
+static FMatrix Translate(float x, float y, float z)
+{
+	return FMatrix(
+		FVector4(1.0f, 0.0f, 0.0f, 0.0f),
+		FVector4(0.0f, 1.0f, 0.0f, 0.0f),
+		FVector4(0.0f, 0.0f, 1.0f, 0.0f),
+		FVector4(x, y, z, 1.0f)
+	);
+}
+
+static FMatrix Scale(float x, float y, float z)
+{
+	return FMatrix(
+		FVector4(x, 0.0f, 0.0f, 0.0f),
+		FVector4(0.0f, y, 0.0f, 0.0f),
+		FVector4(0.0f, 0.0f, z, 0.0f),
+		FVector4(0.0f, 0.0f, 0.0f, 1.0f)
+	);
+}
+
+static FMatrix RotateX(float angle)
+{
+	float radian = DegreeToRadian(angle);
+	float cosA = cos(radian);
+	float sinA = sin(radian);
+	return FMatrix(
+		FVector4(1.0f, 0.0f, 0.0f, 0.0f),
+		FVector4(0.0f, cosA, sinA, 0.0f),
+		FVector4(0.0f, -sinA, cosA, 0.0f),
+		FVector4(0.0f, 0.0f, 0.0f, 1.0f)
+	);
+}
+
+static FMatrix RotateY(float angle)
+{
+	float radian = DegreeToRadian(angle);
+	float cosA = cos(radian);
+	float sinA = sin(radian);
+	return FMatrix(
+		FVector4(cosA, 0.0f, -sinA, 0.0f),
+		FVector4(0.0f, 1.0f, 0.0f, 0.0f),
+		FVector4(sinA, 0.0f, cosA, 0.0f),
+		FVector4(0.0f, 0.0f, 0.0f, 1.0f)
+	);
+}
+
+static FMatrix RotateZ(float angle)
+{
+	float radian = DegreeToRadian(angle);
+	float cosA = cos(radian);
+	float sinA = sin(radian);
+	return FMatrix(
+		FVector4(cosA, sinA, 0.0f, 0.0f),
+		FVector4(-sinA, cosA, 0.0f, 0.0f),
+		FVector4(0.0f, 0.0f, 1.0f, 0.0f),
+		FVector4(0.0f, 0.0f, 0.0f, 1.0f)
+	);
+}
+
+static FMatrix Rotate(float angleX, float angleY, float angleZ)
+{
+	return RotateX(angleX) * RotateY(angleY) * RotateZ(angleZ);
+}
+
+static FMatrix Ortho(float left, float right, float bottom, float top, float nearZ, float farZ)
+{
+	return FMatrix{
+		FVector4(2.0f / (right - left), 0.0f, 0.0f, 0.0f),
+		FVector4(0.0f, 2.0f / (top - bottom), 0.0f, 0.0f),
+		FVector4(0.0f, 0.0f, 1.0f / (farZ - nearZ), 0.0f),
+		FVector4(-(right + left) / (right - left), -(top + bottom) / (top - bottom), -nearZ / (farZ - nearZ), 1.0f)
+	};
+}
+
+static float DistanceSquared(const FVector2& a, const FVector2& b)
+{
+	return (a - b).LengthSquared();
 }
 
 static bool Raycast(const FRay& ray, const FTriangle& triangle, FVector& outPoint)
@@ -58,4 +137,17 @@ static bool Raycast(const FRay& ray, const FTriangle& triangle, FVector& outPoin
 
 	outPoint = ray.Origin + ray.Direction * t;
 	return true;
+}
+
+static FVector2 WorldToScreen(const FVector& worldPos, const FMatrix& viewProjection, int screenWidth, int screenHeight)
+{
+	FVector4 clipSpacePos = FVector4(worldPos.x, worldPos.y, worldPos.z, 1.0f) * viewProjection;
+
+	FVector2 ndcPos(clipSpacePos.x / clipSpacePos.w, clipSpacePos.y / clipSpacePos.w);
+	FVector2 screenPos(
+		(ndcPos.x + 1.0f) * 0.5f * screenWidth,
+		(1.0f - (ndcPos.y + 1.0f) * 0.5f) * screenHeight
+	);
+
+	return screenPos;
 }

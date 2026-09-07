@@ -17,6 +17,10 @@
 #include <map>
 #include <unordered_map>
 #include <bitset>
+#include <functional>
+#include <deque>
+#include <chrono>
+#include <format>
 
 #define ASSERT(expr) if (!(expr)) { std::cerr << "Assertion failed: " << #expr << std::endl; std::abort(); }
 
@@ -43,8 +47,13 @@ using FString = std::string;
 template <typename TKey, typename TValue>
 using TMap = std::unordered_map<TKey, TValue>;
 
+template <typename TKey>
+using TDeque = std::deque<TKey>;
+
 template <size_t N>
 using FBitSet = std::bitset<N>;
+
+using FDateTime = std::chrono::system_clock::time_point;
 
 struct FPoint
 {
@@ -58,6 +67,16 @@ struct FVector2
 	float y;
 
 	FVector2(float _x = 0, float _y = 0) : x(_x), y(_y) {}
+
+	float LengthSquared() const
+	{
+		return x * x + y * y;
+	}
+
+	FVector2 operator-(const FVector2& other) const
+	{
+		return FVector2(x - other.x, y - other.y);
+	}
 };
 
 struct FVector
@@ -110,6 +129,11 @@ struct FVector
 	FVector operator-(const FVector& rhs) const
 	{
 		return FVector(x - rhs.x, y - rhs.y, z - rhs.z);
+	}
+
+	FVector operator-() const
+	{
+		return FVector(-x, -y, -z);
 	}
 
 	FVector operator*(float scalar) const
@@ -441,6 +465,8 @@ struct FTriangle
 };
 
 static const FVector Front = FVector(1.0f, 0.0f, 0.0f);
+static const FVector Right = FVector(0.0f, 1.0f, 0.0f);
+static const FVector Up = FVector(0.0f, 0.0f, 1.0f);
 
 struct FVertexSimple
 {
