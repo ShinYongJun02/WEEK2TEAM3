@@ -7,7 +7,7 @@
 #define DECLARE_CLASS(ClassName, ParentClass) \
     static UClass* StaticClass() { \
         static UClass Instance(#ClassName, ParentClass::StaticClass(), \
-			&ConstructUObject<ClassName>); \
+			MakeConstructor<ClassName>()); \
         return &Instance; \
     } \
 	virtual UClass* GetClass() const override { return ClassName::StaticClass(); }

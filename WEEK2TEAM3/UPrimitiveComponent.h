@@ -28,6 +28,6 @@ public:
 		return IntersectLocal(local, outT);
 	}
 
-	// Möller–Trumbore 방식으로 변환할 때 여기만 수정
-	virtual bool IntersectLocal(const FRay& localRay, float& outT) const { return false; };
+	// Möller–Trumbore 방식
+	bool IntersectLocal(const FRay& localRay, float& outT) const;
 };

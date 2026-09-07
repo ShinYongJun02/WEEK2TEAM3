@@ -1,5 +1,7 @@
 #pragma once
 
+#include <type_traits>
+
 #include "Core.h"
 
 class UObject;
@@ -9,6 +11,13 @@ template<typename T>
 inline UObject* ConstructUObject()
 {
 	return new T();
+}
+
+template<typename T>
+inline ConstructorType MakeConstructor()
+{
+	if constexpr (std::is_abstract_v<T>) return nullptr;
+	else return &ConstructUObject<T>;
 }
 
 // 클래스 이름 변경? UObject 상속?

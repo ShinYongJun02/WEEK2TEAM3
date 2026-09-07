@@ -12,16 +12,16 @@ class UPlaneComp : public UPrimitiveComponent
 public:
 	DECLARE_CLASS(UPlaneComp, UPrimitiveComponent)
 
-	virtual bool IntersectLocal(const FRay& localRay, float& outT) const
-	{
-		if (localRay.Origin.z <= 0.0f || localRay.Direction.z >= 0.0f) return false;
+	//bool IntersectLocal(const FRay& localRay, float& outT) const
+	//{
+	//	if (localRay.Origin.z <= 0.0f || localRay.Direction.z >= 0.0f) return false;
 
-		float t = -localRay.Origin.z / localRay.Direction.z;
-		FVector z0 = localRay.Origin + localRay.Direction * t;
+	//	float t = -localRay.Origin.z / localRay.Direction.z;
+	//	FVector z0 = localRay.Origin + localRay.Direction * t;
 
-		if (z0.x <-halfX || z0.x > halfX || z0.y < -halfY || z0.y > halfY) return false;
+	//	if (z0.x <-halfX || z0.x > halfX || z0.y < -halfY || z0.y > halfY) return false;
 
-		outT = t;
-		return true;
-	}
+	//	outT = t;
+	//	return true;
+	//}
 };

@@ -3,11 +3,13 @@
 #include "UObject.h"
 
 class URenderer;
+struct FVertex;
 
 struct FStaticMesh
 {
 	ID3D11Buffer* VertexBuffer;
 	UINT VertexCount;
+	const FVertex* Vertices = nullptr;
 };
 
 class UResourceManager : public UObject
