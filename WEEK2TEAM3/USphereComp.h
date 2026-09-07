@@ -9,7 +9,7 @@ class USphereComp : public UPrimitiveComponent
 public:
 	USphereComp() = default;
 
-	void Initialize(UResourceManager& ResourceManager);
+	void Initialize(UResourceManager& ResourceManager) override;
 
 	bool CheckIntersection(const FRay& Ray) const override;
 };

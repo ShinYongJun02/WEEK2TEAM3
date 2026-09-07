@@ -21,6 +21,7 @@
 #include <deque>
 #include <chrono>
 #include <format>
+#include <utility>
 
 #define ASSERT(expr) if (!(expr)) { std::cerr << "Assertion failed: " << #expr << std::endl; std::abort(); }
 
@@ -32,6 +33,9 @@ typedef unsigned long long uint64;
 
 template <typename T>
 using TArray = std::vector<T>;
+
+template <typename A, typename B>
+using TPair = std::pair<A, B>;
 
 template <typename T>
 using TSharedPtr = std::shared_ptr<T>;

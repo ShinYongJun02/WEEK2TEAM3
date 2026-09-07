@@ -7,6 +7,7 @@
 #include "UCubeComp.h"
 #include "USphereComp.h"
 #include "UPlaneComp.h"
+#include "USceneManager.h"
 #include "UObjectAllocator.h"
 #include "FConsoleWindow.h"
 #include "UGizmo.h"
@@ -602,6 +603,21 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				delete GUObjectArray[SelectedObjectIndex];
 				SelectedObjectIndex = -1;
 			}
+		}
+
+		ImGui::Separator();
+
+		if (ImGui::Button("Save Scene", ImVec2(120, 0)))
+		{
+			USceneManager::SaveScene();
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Load Scene", ImVec2(120, 0)))
+		{
+			USceneManager::LoadScene(resourceManager);
+			SelectedObjectIndex = -1;
 		}
 		ImGui::End();
 

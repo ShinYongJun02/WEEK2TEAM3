@@ -19,6 +19,7 @@
 			static UClass ClassInfo{ #ClassType, ParentClassType::StaticClass(), &ClassType::CreateInstance }; \
 			return &ClassInfo; \
 		} \
+		inline static const UClass* AutoRegisterClass = RegisterClass(ClassType::StaticClass()); \
 		virtual const UClass* GetClass() const override { return ClassType::StaticClass(); } \
 
 class UObject;
@@ -47,6 +48,26 @@ struct UClass
 		return false;
 	}
 };
+
+// 클래스 이름으로 UClass 를 찾기 위한 전역 레지스트리.
+// GENERATED_BODY 의 AutoRegisterClass 가 프로그램 시작 시 자기 자신을 등록한다.
+inline TMap<FString, const UClass*>& GetClassRegistry()
+{
+	static TMap<FString, const UClass*> Registry;
+	return Registry;
+}
+
+inline const UClass* RegisterClass(const UClass* ClassType)
+{
+	GetClassRegistry()[ClassType->TypeName] = ClassType;
+	return ClassType;
+}
+
+inline const UClass* FindClass(const FString& TypeName)
+{
+	auto It = GetClassRegistry().find(TypeName);
+	return It == GetClassRegistry().end() ? nullptr : It->second;
+}
 
 class UObject
 {
