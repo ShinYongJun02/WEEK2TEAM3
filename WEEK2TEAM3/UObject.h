@@ -12,7 +12,7 @@
 				return nullptr; \
 			} \
 			else { \
-				return NewObject<ClassType>(); \
+				return FObjectFactory::NewObject<ClassType>(); \
 			} \
 		} \
 		static const UClass* StaticClass() { \
@@ -114,17 +114,6 @@ public:
 	uint32 InternalIndex;
 };
 
-template<typename T, typename... Args>
-T* NewObject(Args&&... args)
-{
-	T* obj = new T(std::forward<Args>(args)...);
-	obj->UUID = UEngineStatics::GenUUID();
-	obj->InternalIndex = (uint32)GUObjectArray.size();
-	GUObjectArray.push_back(obj);
-
-	return obj;
-}
-
 struct FObjectFactory
 {
 	static UObject* ConstructObject(const UClass* ClassType)
@@ -134,5 +123,16 @@ struct FObjectFactory
 			return ClassType->CreateObject();
 		}
 		return nullptr;
+	}
+
+	template<typename T, typename... Args>
+	static T* NewObject(Args&&... args)
+	{
+		T* obj = new T(std::forward<Args>(args)...);
+		obj->UUID = UEngineStatics::GenUUID();
+		obj->InternalIndex = (uint32)GUObjectArray.size();
+		GUObjectArray.push_back(obj);
+
+		return obj;
 	}
 };
