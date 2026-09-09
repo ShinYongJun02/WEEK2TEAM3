@@ -1,5 +1,8 @@
 #include "UPlaneComp.h"
 
+#include "FVertex.h"
+#include "Helper.h"
+
 void UPlaneComp::Initialize(UResourceManager& ResourceManager)
 {
 	StaticMesh = ResourceManager.GetStaticMesh("Plane");
@@ -44,4 +47,3 @@ float UPlaneComp::CheckIntersection(const FRay& Ray) const
 
 	return ClosestT;
 }
-

@@ -1,7 +1,5 @@
 #include "FVertex.h"
 
-#include "Core.h"
-
 FVertex PlaneVertices[] =
 {
 	{ -1.0f, -1.0f, 0.0f,  1.0f, 0.0f, 0.0f, 1.0f },
@@ -11,18 +9,6 @@ FVertex PlaneVertices[] =
 	{ -1.0f, -1.0f, 0.0f,  0.0f, 0.0f, 1.0f, 1.0f },
 	{  1.0f, -1.0f, 0.0f,  0.0f, 1.0f, 0.0f, 1.0f }
 };
-
-int32 PlaneVerticesSize = static_cast<int32>(sizeof(PlaneVertices) / sizeof(FVertex));
-
-FVertex TriangleVertices[] =
-{
-	{  0.0f,  1.0f, 0.0f,  1.0f, 0.0f, 0.0f, 1.0f }, // Top vertex (red)
-	{ -1.0f, -1.0f, 0.0f,  0.0f, 0.0f, 1.0f, 1.0f }, // Bottom-left vertex (blue)
-	{  1.0f, -1.0f, 0.0f,  0.0f, 1.0f, 0.0f, 1.0f }  // Bottom-right vertex (green)
-};
-
-int32 TriangleVerticesSize = static_cast<int32>(sizeof(TriangleVertices) / sizeof(FVertex));
-
 
 FVertex CubeVertices[] =
 {
@@ -68,8 +54,6 @@ FVertex CubeVertices[] =
 	{  0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.5f, 1.0f }, // Bottom-right (purple)
 	{  0.5f, -0.5f,  0.5f,  0.0f, 1.0f, 0.0f, 1.0f }, // Top-right (green)
 };
-
-int32 CubeVerticesSize = static_cast<int32>(sizeof(CubeVertices) / sizeof(FVertex));
 
 FVertex SphereVertices[] = {
 	{ 0.000000f, 0.500000f, 0.000000f, 0.500000f, 1.000000f, 0.500000f, 1.000000f },
@@ -2473,5 +2457,3 @@ FVertex SphereVertices[] = {
 	{ 0.078217f, -0.493844f, 0.000000f, 0.578217f, 0.006156f, 0.500000f, 1.000000f },
 	{ -0.000000f, -0.500000f, -0.000000f, 0.500000f, 0.000000f, 0.500000f, 1.000000f },
 };
-
-int32 SphereVerticesSize = static_cast<int32>(sizeof(SphereVertices) / sizeof(FVertex));

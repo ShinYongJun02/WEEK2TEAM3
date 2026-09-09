@@ -1,4 +1,6 @@
 #include "UCubeComp.h"
+
+#include "FVertex.h"
 #include "Helper.h"
 
 void UCubeComp::Initialize(UResourceManager& ResourceManager)
@@ -23,7 +25,7 @@ float UCubeComp::CheckIntersection(const FRay& Ray) const
 	{
 		return -1.0f;
 	}
-	
+
 	float ClosestT = -1.0f;
 	for (uint32 Index = 0; Index < StaticMesh->VertexCount; Index += 3)
 	{

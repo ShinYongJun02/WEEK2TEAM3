@@ -1,6 +1,8 @@
 #include "FUUID.h"
-#include <random>
+
+#include <cstdint>
 #include <format>
+#include <random>
 
 static std::mt19937 GGenerator(std::random_device{}());
 
@@ -18,9 +20,27 @@ FUUID::FUUID()
 	D = Distribution(GGenerator);
 }
 
+FUUID::FUUID(uint32 InA, uint32 InB, uint32 InC, uint32 InD)
+	: A(InA)
+	, B(InB)
+	, C(InC)
+	, D(InD)
+{
+}
+
 FString FUUID::ToString() const
 {
 	return std::format("{}-{}-{}-{}", A, B, C, D);
+}
+
+bool FUUID::operator==(const FUUID& Other) const
+{
+	return A == Other.A && B == Other.B && C == Other.C && D == Other.D;
+}
+
+bool FUUID::operator!=(const FUUID& Other) const
+{
+	return A != Other.A || B != Other.B || C != Other.C || D != Other.D;
 }
 
 FUUID FUUID::NewUUID()

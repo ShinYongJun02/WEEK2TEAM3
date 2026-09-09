@@ -1,23 +1,12 @@
 #include "UResourceManager.h"
+
 #include "FRenderer.h"
+#include "FVertex.h"
 
-extern FVertex PlaneVertices[];
-extern FVertex CubeVertices[];
-extern FVertex SphereVertices[];
-
-void UResourceManager::Initialize(FRenderer& InRenderer)
-{
-	Renderer = &InRenderer;
-
-	BuiltInStaticMeshes();
-}
-
-void SetMinMaxVertex(TSharedPtr<FStaticMesh>& StaticMesh, FVertex Vertex[])
+static void SetMinMaxVertex(TSharedPtr<FStaticMesh>& StaticMesh, FVertex Vertex[])
 {
 	StaticMesh->MinVertex = FVector(Vertex[0].X, Vertex[0].Y, Vertex[0].Z);
 	StaticMesh->MaxVertex = FVector(Vertex[0].X, Vertex[0].Y, Vertex[0].Z);
-
-
 
 	for (int Index = 1; Index < StaticMesh->VertexCount; Index++)
 	{
@@ -48,6 +37,13 @@ void SetMinMaxVertex(TSharedPtr<FStaticMesh>& StaticMesh, FVertex Vertex[])
 			StaticMesh->MaxVertex.Z = Vertex[Index].Z;
 		}
 	}
+}
+
+void UResourceManager::Initialize(FRenderer& InRenderer)
+{
+	Renderer = &InRenderer;
+
+	BuiltInStaticMeshes();
 }
 
 void UResourceManager::BuiltInStaticMeshes()

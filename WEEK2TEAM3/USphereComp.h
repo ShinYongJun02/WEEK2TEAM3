@@ -1,6 +1,6 @@
 #pragma once
+
 #include "UPrimitiveComponent.h"
-#include "FVertex.h"
 
 class USphereComp : public UPrimitiveComponent
 {

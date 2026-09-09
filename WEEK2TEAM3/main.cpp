@@ -1,69 +1,38 @@
+#include <windows.h>
+#include <windowsx.h>
+
+#include <cfloat>
+#include <cstdio>
+#include <cstring>
+#include <iterator>
+
+#include "ImGui/imgui.h"
+#include "ImGui/imgui_impl_dx11.h"
+#include "ImGui/imgui_impl_win32.h"
+#include "ImGui/ImGuizmo.h"
+
 #include "Core.h"
-#include "FVertex.h"
-#include "FRenderer.h"
-#include "UCamera.h"
-#include "UResourceManager.h"
-#include "FInputContext.h"
-#include "UCubeComp.h"
-#include "USphereComp.h"
-#include "UPlaneComp.h"
-#include "FSceneManager.h"
-#include "FUObjectAllocator.h"
 #include "FConsoleWindow.h"
 #include "FGizmo.h"
+#include "FInputContext.h"
 #include "FLogger.h"
+#include "FRenderer.h"
+#include "FRenderPipeline.h"
+#include "FSceneManager.h"
+#include "FUObjectAllocator.h"
+#include "FWindowEventHandler.h"
 #include "Helper.h"
+#include "UCamera.h"
+#include "UCubeComp.h"
+#include "UObject.h"
+#include "UPlaneComp.h"
+#include "UPrimitiveComponent.h"
+#include "UResourceManager.h"
+#include "USceneComponent.h"
+#include "USphereComp.h"
 
-// 화면 경계
-const float LeftBorder = -1.0f;
-const float RightBorder = 1.0f;
-const float TopBorder = 1.0f;
-const float BottomBorder = -1.0f;
-
-class FWindowEventHandler {
-public:
-	FWindowEventHandler(FRenderer& InRenderer, FInputContext& InInputContext)
-		: Renderer(InRenderer)
-		, InputContext(InInputContext)
-	{
-	}
-
-	inline void HandleResize(UINT Width, UINT Height)
-	{
-		Renderer.Resize(Width, Height);
-	}
-
-	inline void HandleKeyDown(uint64 KeyCode)
-	{
-		InputContext.HandleKeyDown(KeyCode);
-	}
-
-	inline void HandleKeyUp(uint64 KeyCode)
-	{
-		InputContext.HandleKeyUp(KeyCode);
-	}
-
-	inline void HandleMouseButtonDown(uint8 ButtonIndex)
-	{
-		InputContext.HandleMouseButtonDown(ButtonIndex);
-	}
-
-	inline void HandleMouseButtonUp(uint8 ButtonIndex)
-	{
-		InputContext.HandleMouseButtonUp(ButtonIndex);
-	}
-
-	inline void HandleMouseMove(int32 X, int32 Y)
-	{
-		InputContext.HandleMouseMove(X, Y);
-	}
-
-private:
-	FRenderer& Renderer;
-	FInputContext& InputContext;
-};
-
-void CreateDebugConsole() {
+static void CreateDebugConsole()
+{
 	// 1. Allocate a new console for the calling process
 	if (AllocConsole()) {
 		FILE* Fp;
@@ -86,7 +55,7 @@ void CreateDebugConsole() {
 	}
 }
 
-UPrimitiveComponent* SpawnPrimitiveByType(int TypeIndex, UResourceManager& ResourceManager)
+static UPrimitiveComponent* SpawnPrimitiveByType(int TypeIndex, UResourceManager& ResourceManager)
 {
 	UPrimitiveComponent* NewPrimitive = nullptr;
 
@@ -228,19 +197,15 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 	// ImGui 초기화
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
-	ImGuiIO& Io = ImGui::GetIO();
 	ImGui_ImplWin32_Init((void*)WindowHandle);
 	ImGui_ImplDX11_Init(Renderer.Device, Renderer.DeviceContext);
 
 	// FPS 관리
-	const int TargetFPS = 144;
-	const double TargetFrameTime = 1000.0 / TargetFPS;
 	LARGE_INTEGER Frequency;
 	LARGE_INTEGER CurrentTime, LastTime;
 	QueryPerformanceFrequency(&Frequency);
 	QueryPerformanceCounter(&CurrentTime);
 	LastTime = CurrentTime;
-	double ElapsedTime = 0.0;
 	double DeltaTime = 0.0f;
 
 	// 카메라
@@ -254,10 +219,6 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 	double CameraSpeed = 0.25f;
 
 	// 마우스 추적
-	POINT Pt;
-	GetCursorPos(&Pt);          // 화면 좌표
-	ScreenToClient(WindowHandle, &Pt);  // 클라이언트 좌표로 변환
-
 	int32 LastMouseX = InputContext.GetMouseX();
 	int32 LastMouseY = InputContext.GetMouseY();
 
@@ -492,7 +453,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 		ConsoleWindow.Draw("Debug Console", nullptr);
 
 		ImGui::Begin("Outliner");
-		
+
 		for (int32 Index = 0; Index < GUObjectArray.size(); Index++)
 		{
 			if (!GUObjectArray[Index]->IsA<UPrimitiveComponent>())
@@ -514,7 +475,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 		ImGui::End();
 
 		ImGui::Begin("Details Panel");
-		
+
 		if (SelectedObjectIndex != -1 && GUObjectArray[SelectedObjectIndex]->IsA<USceneComponent>())
 		{
 			USceneComponent* SelectedObject = static_cast<USceneComponent*>(GUObjectArray[SelectedObjectIndex]);

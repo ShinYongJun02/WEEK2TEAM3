@@ -5,70 +5,24 @@
 class FInputContext
 {
 public:
-	inline void HandleKeyDown(uint64 KeyCode) {
-		KeyDownStates.set(KeyCode, true);
-		KeyPressedStates.set(KeyCode, true);
-	}
+	void HandleKeyDown(uint64 KeyCode);
+	void HandleKeyUp(uint64 KeyCode);
+	void HandleMouseButtonDown(uint8 ButtonIndex);
+	void HandleMouseButtonUp(uint8 ButtonIndex);
+	void HandleMouseMove(int32 X, int32 Y);
 
-	inline void HandleKeyUp(uint64 KeyCode) {
-		KeyUpStates.set(KeyCode, true);
-		KeyPressedStates.set(KeyCode, false);
-	}
+	void Update();
 
-	inline void HandleMouseButtonDown(uint8 ButtonIndex) {
-		MouseButtonDownStates |= (1 << ButtonIndex);
-		MouseButtonPressedStates |= (1 << ButtonIndex);
-	}
+	bool IsKeyDown(uint64 KeyCode) const;
+	bool IsKeyUp(uint64 KeyCode) const;
+	bool IsKeyPressed(uint64 KeyCode) const;
 
-	inline void HandleMouseButtonUp(uint8 ButtonIndex) {
-		MouseButtonUpStates |= (1 << ButtonIndex);
-		MouseButtonPressedStates &= ~(1 << ButtonIndex);
-	}
+	bool IsMouseButtonDown(uint8 ButtonIndex) const;
+	bool IsMouseButtonUp(uint8 ButtonIndex) const;
+	bool IsMouseButtonPressed(uint8 ButtonIndex) const;
 
-	inline void HandleMouseMove(int32 X, int32 Y) {
-		MouseX = X;
-		MouseY = Y;
-	}
-
-	inline void Update() {
-		KeyDownStates.reset();
-		KeyUpStates.reset();
-
-		MouseButtonDownStates = 0;
-		MouseButtonUpStates = 0;
-	}
-
-	inline bool IsKeyDown(uint64 KeyCode) const {
-		return KeyDownStates.test(KeyCode);
-	}
-
-	inline bool IsKeyUp(uint64 KeyCode) const {
-		return KeyUpStates.test(KeyCode);
-	}
-
-	inline bool IsKeyPressed(uint64 KeyCode) const {
-		return KeyPressedStates.test(KeyCode);
-	}
-
-	inline bool IsMouseButtonDown(uint8 ButtonIndex) const {
-		return (MouseButtonDownStates & (1 << ButtonIndex)) != 0;
-	}
-
-	inline bool IsMouseButtonUp(uint8 ButtonIndex) const {
-		return (MouseButtonUpStates & (1 << ButtonIndex)) != 0;
-	}
-
-	inline bool IsMouseButtonPressed(uint8 ButtonIndex) const {
-		return (MouseButtonPressedStates & (1 << ButtonIndex)) != 0;
-	}
-
-	inline int32 GetMouseX() const {
-		return MouseX;
-	}
-
-	inline int32 GetMouseY() const {
-		return MouseY;
-	}
+	int32 GetMouseX() const;
+	int32 GetMouseY() const;
 
 private:
 	FBitSet<256> KeyDownStates;

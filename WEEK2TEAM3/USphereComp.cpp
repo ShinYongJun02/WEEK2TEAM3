@@ -1,5 +1,7 @@
-#pragma once
 #include "USphereComp.h"
+
+#include "FVertex.h"
+#include "Helper.h"
 
 void USphereComp::Initialize(UResourceManager& ResourceManager)
 {

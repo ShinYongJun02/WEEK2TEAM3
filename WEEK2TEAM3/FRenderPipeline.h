@@ -1,5 +1,7 @@
 #pragma once
 
+#include <d3d11.h>
+
 #include "Core.h"
 
 class FRenderer;
@@ -7,16 +9,8 @@ class FRenderer;
 class FRenderPipeline
 {
 public:
-	FRenderPipeline(ID3D11Device* InDevice, ID3D11DeviceContext* InDeviceContext) 
-		: Device(InDevice)
-		, DeviceContext(InDeviceContext) 
-	{
-	}
-
-	~FRenderPipeline() 
-	{
-		Release();
-	}
+	FRenderPipeline(ID3D11Device* InDevice, ID3D11DeviceContext* InDeviceContext);
+	~FRenderPipeline();
 
 	void Release();
 

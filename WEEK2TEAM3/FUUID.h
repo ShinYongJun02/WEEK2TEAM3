@@ -6,19 +6,12 @@ struct FUUID
 {
 public:
 	FUUID();
-	FUUID(uint32 InA, uint32 InB, uint32 InC, uint32 InD) : A(InA), B(InB), C(InC), D(InD) {}
+	FUUID(uint32 InA, uint32 InB, uint32 InC, uint32 InD);
 
 	FString ToString() const;
 
-	bool operator==(const FUUID& Other) const
-	{
-		return A == Other.A && B == Other.B && C == Other.C && D == Other.D;
-	}
-
-	bool operator!=(const FUUID& Other) const
-	{
-		return A != Other.A || B != Other.B || C != Other.C || D != Other.D;
-	}
+	bool operator==(const FUUID& Other) const;
+	bool operator!=(const FUUID& Other) const;
 
 	static FUUID NewUUID();
 

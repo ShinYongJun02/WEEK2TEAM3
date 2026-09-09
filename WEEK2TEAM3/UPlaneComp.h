@@ -1,7 +1,6 @@
 #pragma once
 
 #include "UPrimitiveComponent.h"
-#include "FVertex.h"
 
 class UPlaneComp : public UPrimitiveComponent
 {

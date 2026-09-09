@@ -1,10 +1,9 @@
 #pragma once
 
-#include "Core.h"
 #include "USceneComponent.h"
 #include "UResourceManager.h"
-#include "FRenderer.h"
-#include <wrl.h>
+
+class FRenderer;
 
 class UPrimitiveComponent : public USceneComponent
 {
@@ -17,7 +16,7 @@ public:
 	virtual void Render(FRenderer& Renderer);
 	virtual float CheckIntersection(const FRay& Ray) const = 0;
 
-	inline TSharedPtr<FStaticMesh> GetStaticMesh() const { return StaticMesh; }
+	TSharedPtr<FStaticMesh> GetStaticMesh() const;
 	FString GetName();
 
 protected:

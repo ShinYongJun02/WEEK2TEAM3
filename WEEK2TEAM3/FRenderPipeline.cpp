@@ -1,5 +1,20 @@
 #include "FRenderPipeline.h"
-#include "FRenderer.h"
+
+#include <windows.h>
+#include <d3dcompiler.h>
+
+#include "FVertex.h"
+
+FRenderPipeline::FRenderPipeline(ID3D11Device* InDevice, ID3D11DeviceContext* InDeviceContext)
+	: Device(InDevice)
+	, DeviceContext(InDeviceContext)
+{
+}
+
+FRenderPipeline::~FRenderPipeline()
+{
+	Release();
+}
 
 void FRenderPipeline::Release()
 {
