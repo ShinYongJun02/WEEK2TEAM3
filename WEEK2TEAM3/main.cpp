@@ -9,7 +9,6 @@
 #include "ImGui/imgui.h"
 #include "ImGui/imgui_impl_dx11.h"
 #include "ImGui/imgui_impl_win32.h"
-#include "ImGui/ImGuizmo.h"
 
 #include "Core.h"
 #include "FConsoleWindow.h"
@@ -264,11 +263,6 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 	bool bCurrentGizmoWorldMode = true;
 	EGizmoOperation CurrentGizmoOperation = EGizmoOperation::Translate;
 
-	UE_LOG(Test, Info, "Game Tech Lab Start!");
-	UE_LOG(Test, Info, "This is long message This is long message This is long message This is long message This is long message This is long message This is long message This is long message This is long message This is long message");
-	UE_LOG(Test, Warning, "This is a warning message.");
-	UE_LOG(Test, Error, "This is an error message.");
-
 	while (bIsExit == false)
 	{
 		QueryPerformanceCounter(&CurrentTime);
@@ -294,23 +288,28 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 			if (CurrentGizmoOperation == EGizmoOperation::Translate)
 			{
 				CurrentGizmoOperation = EGizmoOperation::Rotate;
+				UE_LOG(Engine, Info, "Set Gizmo Mode Rotate");
 			}
 			else if (CurrentGizmoOperation == EGizmoOperation::Rotate)
-			{
+			{				
 				CurrentGizmoOperation = EGizmoOperation::Scale;
+				UE_LOG(Engine, Info, "Set Gizmo Mode Scale");
 			}
 			else
 			{
 				CurrentGizmoOperation = EGizmoOperation::Translate;
+				UE_LOG(Engine, Info, "Set Gizmo Mode Location");
 			}
 		}
 		else if (InputContext.IsKeyDown('V'))
 		{
 			bCurrentGizmoWorldMode = true;
+			UE_LOG(Engine, Info, "Set Gizmo Mode World");
 		}
 		else if (InputContext.IsKeyDown('B'))
 		{
 			bCurrentGizmoWorldMode = false;
+			UE_LOG(Engine, Info, "Set Gizmo Mode Local");
 		}
 
 		// 마우스 추적
@@ -393,7 +392,6 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 		ImGui_ImplDX11_NewFrame();
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
-		ImGuizmo::BeginFrame();
 
 		if (InputContext.IsMouseButtonDown(0)) {
 			if (!ImGui::GetIO().WantCaptureMouse)
@@ -497,39 +495,13 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 
 		ImGui::End();
 
-		// ImGuizmo
 		if (SelectedObjectIndex != -1 && GUObjectArray[SelectedObjectIndex]->IsA<USceneComponent>())
 		{
 			USceneComponent* SelectedObject = static_cast<USceneComponent*>(GUObjectArray[SelectedObjectIndex]);
-#if 0
-			FMatrix Mat = SelectedObject->GetModelMatrix();
 
-			if (SelectedObject)
-			{
-				FMatrix Model = SelectedObject->GetModelMatrix();
-
-				ImGuizmo::SetOrthographic(false);
-				ImGuizmo::SetRect(0.0f, 0.0f, Renderer.GetWidth(), Renderer.GetHeight());
-				ImGuizmo::Manipulate(View.M[0], Projection.M[0], TrsMode, WlMode, Model.M[0], NULL, NULL);
-
-				if (ImGuizmo::IsUsing())
-				{
-					float Translation[3];
-					float Rotation[3];
-					float Scale[3];
-
-					ImGuizmo::DecomposeMatrixToComponents(Model.M[0], Translation, Rotation, Scale);
-
-					SelectedObject->RelativeLocation = FVector(Translation[0], Translation[1], Translation[2]);
-					SelectedObject->RelativeRotation = FVector(-Rotation[0], -Rotation[1], Rotation[2]);
-					SelectedObject->RelativeScale3D = FVector(Scale[0], Scale[1], Scale[2]);
-				}
-			}
-#else
 			Gizmo.SetOperation(CurrentGizmoOperation);
 			Gizmo.SetWorldMode(bCurrentGizmoWorldMode);
 			Gizmo.Draw(*SelectedObject, Camera->RelativeLocation, ViewProjection);
-#endif
 		}
 
 		ImGui::Begin("Place Actors");
@@ -557,7 +529,8 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 		{
 			for (int Index = 0; Index < SpawnCount; Index++)
 			{
-				SpawnPrimitiveByType(SelectedPrimitiveIndex, ResourceManager);
+				UPrimitiveComponent* NewComponent = SpawnPrimitiveByType(SelectedPrimitiveIndex, ResourceManager);
+				UE_LOG(Engine, Info, "Spawn %s UUID : %s", NewComponent->GetName().c_str(), NewComponent->UUID.ToString().c_str());
 			}
 		}
 
@@ -569,6 +542,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 		{
 			if (SelectedObjectIndex >= 0 && SelectedObjectIndex < (int32)GUObjectArray.size())
 			{
+				UE_LOG(Engine, Info, "Delete UUID : %s", GUObjectArray[SelectedObjectIndex]->UUID.ToString().c_str());
 				delete GUObjectArray[SelectedObjectIndex];
 				SelectedObjectIndex = -1;
 			}
@@ -600,6 +574,10 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 			{
 				FSceneManager::SaveScene(SceneName);
 			}
+			else
+			{
+				UE_LOG(Engine, Warning, "Please enter a scene title.");
+			}
 		}
 
 		ImGui::SameLine();
@@ -620,6 +598,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 		if (ImGui::Button("Location", ImVec2(100, 0)))
 		{
 			CurrentGizmoOperation = EGizmoOperation::Translate;
+			UE_LOG(Engine, Info, "Set Gizmo Mode Location");
 		}
 
 		ImGui::SameLine();
@@ -627,6 +606,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 		if (ImGui::Button("Rotation", ImVec2(100, 0)))
 		{
 			CurrentGizmoOperation = EGizmoOperation::Rotate;
+			UE_LOG(Engine, Info, "Set Gizmo Mode Rotation");
 		}
 
 		ImGui::SameLine();
@@ -634,11 +614,13 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 		if (ImGui::Button("Scale", ImVec2(100, 0)))
 		{
 			CurrentGizmoOperation = EGizmoOperation::Scale;
+			UE_LOG(Engine, Info, "Set Gizmo Mode Scale");
 		}
 
 		if (ImGui::Button("World", ImVec2(100, 0)))
 		{
 			bCurrentGizmoWorldMode = true;
+			UE_LOG(Engine, Info, "Set Gizmo Mode World");
 		}
 
 		ImGui::SameLine();
@@ -646,6 +628,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 		if (ImGui::Button("Local", ImVec2(100, 0)))
 		{
 			bCurrentGizmoWorldMode = false;
+			UE_LOG(Engine, Info, "Set Gizmo Mode Local");
 		}
 
 		if (Camera->IsA<UPerspectiveCamera>())

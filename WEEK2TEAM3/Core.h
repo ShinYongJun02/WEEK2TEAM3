@@ -10,23 +10,11 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include "Types.h"
 
 #define ASSERT(expr) if (!(expr)) { std::cerr << "Assertion failed: " << #expr << std::endl; std::abort(); }
 
-typedef char int8;
-typedef unsigned char uint8;
-typedef int int32;
-typedef unsigned int uint32;
-typedef unsigned long long uint64;
 
-template <typename T>
-using TArray = std::vector<T>;
-
-template <typename A, typename B>
-using TPair = std::pair<A, B>;
-
-template <typename T>
-using TSharedPtr = std::shared_ptr<T>;
 
 template <typename T, typename... Args>
 TSharedPtr<T> MakeShared(Args&&... Arguments)
@@ -34,24 +22,6 @@ TSharedPtr<T> MakeShared(Args&&... Arguments)
 	return std::make_shared<T>(std::forward<Args>(Arguments)...);
 }
 
-using FString = std::string;
-
-template <typename TKey, typename TValue>
-using TMap = std::unordered_map<TKey, TValue>;
-
-template <typename TKey>
-using TDeque = std::deque<TKey>;
-
-template <size_t N>
-using FBitSet = std::bitset<N>;
-
-using FDateTime = std::chrono::system_clock::time_point;
-
-struct FPoint
-{
-	float X;
-	float Y;
-};
 
 struct FVector2
 {
@@ -184,12 +154,6 @@ struct FTriangle
 	FVector P2;
 
 	FTriangle(const FVector& InP0, const FVector& InP1, const FVector& InP2);
-};
-
-struct FVertexSimple
-{
-	float X, Y, Z;    // Position
-	float R, G, B, A; // Color
 };
 
 float Dot(const FVector2& A, const FVector2& B);

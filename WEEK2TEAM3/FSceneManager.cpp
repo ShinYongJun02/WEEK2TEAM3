@@ -9,6 +9,7 @@
 #include "UPrimitiveComponent.h"
 #include "UResourceManager.h"
 #include "USceneComponent.h"
+#include "FLogger.h"
 
 static void WriteVector(std::ofstream& Out, const char* Key, const FVector& Value)
 {
@@ -22,6 +23,7 @@ bool FSceneManager::SaveScene(const FString SceneName)
 	std::ofstream Out(Path);
 	if (!Out.is_open())
 	{
+		UE_LOG(Engine, Warning, "Please enter a scene title.");
 		return false;
 	}
 
@@ -56,7 +58,7 @@ bool FSceneManager::SaveScene(const FString SceneName)
 
 	Out << "\n\t}\n";
 	Out << "}\n";
-
+	UE_LOG(Engine, Info, "Save Scene : %s", SceneName.c_str());
 	return true;
 }
 
@@ -146,6 +148,8 @@ bool FSceneManager::LoadScene(UResourceManager& ResourceManager, FString SceneNa
 
 	FEngineStatics::SetNextUUID(StringToUUID(NextUUIDValue->AsString()));
 
+	UE_LOG(Engine, Info, "Load Scene : %s", SceneName.c_str());
+
 	return true;
 }
 
@@ -158,4 +162,5 @@ void FSceneManager::ClearScene()
 			FObjectFactory::DestroyObject(GUObjectArray[Index]);
 		}
 	}
+	UE_LOG(Engine, Info, "Clear Scene");
 }

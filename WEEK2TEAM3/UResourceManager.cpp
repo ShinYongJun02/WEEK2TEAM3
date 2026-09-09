@@ -50,19 +50,19 @@ void UResourceManager::BuiltInStaticMeshes()
 {
 	TSharedPtr<FStaticMesh> CubeMesh = MakeShared<FStaticMesh>();
 	CubeMesh->VertexCount = 36;
-	CubeMesh->VertexBuffer = Renderer->CreateVertexBuffer(CubeVertices, sizeof(FVertexSimple) * CubeMesh->VertexCount);
+	CubeMesh->VertexBuffer = Renderer->CreateVertexBuffer(CubeVertices, sizeof(FVertex) * CubeMesh->VertexCount);
 	SetMinMaxVertex(CubeMesh, CubeVertices);
 	StaticMeshMap["Cube"] = CubeMesh;
 
 	TSharedPtr<FStaticMesh> SphereMesh = MakeShared<FStaticMesh>();
 	SphereMesh->VertexCount = 2400;
-	SphereMesh->VertexBuffer = Renderer->CreateVertexBuffer(SphereVertices, sizeof(FVertexSimple) * SphereMesh->VertexCount);
+	SphereMesh->VertexBuffer = Renderer->CreateVertexBuffer(SphereVertices, sizeof(FVertex) * SphereMesh->VertexCount);
 	SetMinMaxVertex(SphereMesh, SphereVertices);
 	StaticMeshMap["Sphere"] = SphereMesh;
 
 	TSharedPtr<FStaticMesh> PlaneMesh = MakeShared<FStaticMesh>();
 	PlaneMesh->VertexCount = 6;
-	PlaneMesh->VertexBuffer = Renderer->CreateVertexBuffer(PlaneVertices, sizeof(FVertexSimple) * PlaneMesh->VertexCount);
+	PlaneMesh->VertexBuffer = Renderer->CreateVertexBuffer(PlaneVertices, sizeof(FVertex) * PlaneMesh->VertexCount);
 	SetMinMaxVertex(PlaneMesh, PlaneVertices);
 	StaticMeshMap["Plane"] = PlaneMesh;
 }
