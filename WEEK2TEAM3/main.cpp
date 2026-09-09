@@ -233,7 +233,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	// 카메라
 	UPerspectiveCamera perspectiveCamera;
-	perspectiveCamera.RelativeLocation += FVector(-5.0f);
+	perspectiveCamera.RelativeLocation = FVector(-5.0f, 0, 5.0f);
+	perspectiveCamera.RelativeRotation = FVector(0, -45.0f, 0);
 
 	UOrthoCamera orthoCamera;
 	orthoCamera.RelativeLocation += FVector(-5.0f);
