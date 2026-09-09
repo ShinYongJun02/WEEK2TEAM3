@@ -20,7 +20,7 @@ UObject::~UObject()
 
 UObject* UObject::CreateInstance()
 {
-	return NewObject<UObject>();
+	return FObjectFactory::NewObject<UObject>();
 }
 
 const UClass* UObject::StaticClass() {
