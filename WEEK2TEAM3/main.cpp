@@ -644,7 +644,6 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 			bCurrentGizmoWorldMode = false;
 		}
 
-
 		if (Camera->IsA<UPerspectiveCamera>())
 		{
 			ImGui::DragFloat("FovY", &PerspectiveCamera.FovY, 0.1f);
@@ -667,6 +666,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 				OrthoCamera.RelativeRotation = Camera->RelativeRotation;
 			}
 		}
+
 		ImGui::Separator();
 		ImGui::Text("Heap Size: %zu bytes", FUObjectAllocator::GetHeapSize());
 		ImGui::Text("Total Allocation Bytes: %u bytes", FUObjectAllocator::GetTotalAllocationBytes());
@@ -682,6 +682,13 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 		InputContext.Update();
 	}
 
+	for (int32 Index = 0; Index < GUObjectArray.size(); Index++)
+	{
+		FObjectFactory::DestroyObject(GUObjectArray[Index]);
+	}
+	GUObjectArray.clear();
+
+	PlaneOutlinePipeline->Release();
 	OutlinePipeline->Release();
 
 	ResourceManager.Release();

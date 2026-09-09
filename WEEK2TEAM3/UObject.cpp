@@ -101,3 +101,12 @@ UObject* FObjectFactory::ConstructObject(const FClass* ClassType)
 	}
 	return nullptr;
 }
+
+void FObjectFactory::DestroyObject(UObject* Obj)
+{
+	if (Obj)
+	{
+		delete Obj;
+	}
+}
+
