@@ -343,3 +343,28 @@ static FVector Lerp(const FVector& a, const FVector& b, float t)
 	return a * (1.0f - t) + b * t;
 }
 
+static FUUID StringToUUID(const FString InString)
+{
+	FUUID Result;
+
+	std::stringstream ss(InString);
+	std::string token;
+
+	TArray<uint32> uintArray;
+
+	while (std::getline(ss, token, '-'))
+	{
+		if (!token.empty())
+		{
+			uint32 num = static_cast<uint32>(std::stoul(token));
+			uintArray.push_back(num);
+		}
+	}
+
+	if (uintArray.size() == 4)
+	{
+		Result = FUUID(uintArray[0], uintArray[1], uintArray[2], uintArray[3]);
+	}
+
+	return Result;
+}

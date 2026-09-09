@@ -13,8 +13,9 @@ class USceneManager
 public:
 	static constexpr uint32 SceneVersion = 1;
 
-	static bool SaveScene(const FString& Path = "Sample.Scene")
+	static bool SaveScene(const FString SceneName )
 	{
+		FString Path = SceneName + ".Scene";
 		std::ofstream Out(Path);
 		if (!Out.is_open())
 		{
@@ -56,10 +57,12 @@ public:
 		return true;
 	}
 
-	static bool LoadScene(UResourceManager& ResourceManager, const FString& Path = "Sample.Scene")
+	static bool LoadScene(UResourceManager& ResourceManager,FString SceneName)
 	{
 		FJsonParser Parser;
 		FJsonValue Root;
+
+		const FString& Path = SceneName + ".Scene";
 
 		if (!Parser.ParseFile(Path, Root))
 		{
@@ -78,7 +81,7 @@ public:
 		}
 
 		const FJsonValue* NextUUIDValue = Root.Find("NextUUID");
-		if (!NextUUIDValue || VersionValue->Type != FJsonValue::EType::String)
+		if (!NextUUIDValue || NextUUIDValue->Type != FJsonValue::EType::String)
 		{
 			return false;
 		}
@@ -133,7 +136,12 @@ public:
 			{
 				Value->AsVector(Primitive->RelativeScale3D);
 			}
+
+			FUUID CurrentUUID = StringToUUID(Member.first);
+			Object->UUID = CurrentUUID;
 		}
+
+		UEngineStatics::SetNextUUID(StringToUUID(NextUUIDValue->AsString()));
 
 		return true;
 	}

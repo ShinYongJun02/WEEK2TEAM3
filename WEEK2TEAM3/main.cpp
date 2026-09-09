@@ -624,21 +624,29 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		{
 			if (!SceneName.empty())
 			{
-				// 씬
+				std::memset(buf, 0, sizeof(buf));
+				SceneName = buf;
 			}
+			USceneManager::ClearScene();
 		}
 
 		if (ImGui::Button("Save Scene", ImVec2(120, 0)))
 		{
-			USceneManager::SaveScene();
+			if (!SceneName.empty())
+			{
+				USceneManager::SaveScene(SceneName);
+			}
 		}
 
 		ImGui::SameLine();
 
 		if (ImGui::Button("Load Scene", ImVec2(120, 0)))
 		{
-			USceneManager::LoadScene(resourceManager);
-			SelectedObjectIndex = -1;
+			if (!SceneName.empty())
+			{
+				USceneManager::LoadScene(resourceManager, SceneName);
+				SelectedObjectIndex = -1;
+			}			
 		}
 
 		ImGui::Separator();
