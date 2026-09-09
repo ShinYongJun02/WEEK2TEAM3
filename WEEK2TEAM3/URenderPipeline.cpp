@@ -49,7 +49,7 @@ void URenderPipeline::Release()
 	}
 }
 
-void URenderPipeline::SetCullMode(D3D11_CULL_MODE cullMode)
+void URenderPipeline::SetRasterRizerState(D3D11_CULL_MODE cullMode, int32 depthBias)
 {
 	if (RasterizerState)
 	{
@@ -60,6 +60,8 @@ void URenderPipeline::SetCullMode(D3D11_CULL_MODE cullMode)
 	D3D11_RASTERIZER_DESC rasterizerDesc = {};
 	rasterizerDesc.FillMode = D3D11_FILL_SOLID;
 	rasterizerDesc.CullMode = cullMode;
+	rasterizerDesc.DepthBias = static_cast<INT>(depthBias);
+	rasterizerDesc.SlopeScaledDepthBias = depthBias != 0 ? 1.0f : 0.0f;
 
 	Device->CreateRasterizerState(&rasterizerDesc, &RasterizerState);
 }

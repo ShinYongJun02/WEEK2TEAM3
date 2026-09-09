@@ -271,10 +271,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	};
 
 	TSharedPtr<URenderPipeline> outlinePipeline = renderer.CreateRenderPipeline();
-	outlinePipeline->SetCullMode(D3D11_CULL_NONE);
-	outlinePipeline->SetDepthStencilState(true, false);
+	outlinePipeline->SetRasterRizerState(D3D11_CULL_FRONT);
+	outlinePipeline->SetDepthStencilState(true, true);
 	outlinePipeline->SetShader("Assets/Shaders/Outline.hlsl");
 	outlinePipeline->AddConstantBuffer<FOutlineConstant>();
+
+	TSharedPtr<URenderPipeline> planeOutlinePipeline = renderer.CreateRenderPipeline();
+	planeOutlinePipeline->SetRasterRizerState(D3D11_CULL_BACK, 1);
+	planeOutlinePipeline->SetDepthStencilState(true, true);
+	planeOutlinePipeline->SetShader("Assets/Shaders/Outline.hlsl");
+	planeOutlinePipeline->AddConstantBuffer<FOutlineConstant>();
 
 	FConsoleWindow consoleWindow;
 	UGizmo gizmo(renderer, inputContext);
@@ -458,6 +464,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			ray.Direction = FVector(worldPos.x, worldPos.y, worldPos.z) - camera->RelativeLocation;
 			ray.Direction.Normalize();
 
+			float closestT = FLT_MAX;
 			for (int i = 0; i < GUObjectArray.size(); i++)
 			{
 				if (!GUObjectArray[i]->IsA<UPrimitiveComponent>())
@@ -466,10 +473,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				}
 
 				UPrimitiveComponent* SelectedObject = static_cast<UPrimitiveComponent*>(GUObjectArray[i]);
-				if (SelectedObject->CheckIntersection(ray))
+				float t = SelectedObject->CheckIntersection(ray);
+				if (t >= 0.0f && t < closestT)
 				{
+					closestT = t;
 					SelectedObjectIndex = SelectedObject->InternalIndex;
-					break;
 				}
 			}
 		}
@@ -477,9 +485,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		// Transform
 		renderer.Prepare();
 		renderer.UpdateViewConstant(viewProjection);
-
-		renderer.RenderWorldAxis(view, projection, FVector4(0.f, 0.f, 1.f, 1.f), Up, 2.0f);
-		renderer.RenderWorldGrid(viewProjection, camera->RelativeLocation);
 
 		for (int32 i = 0; i < GUObjectArray.size(); i++)
 		{
@@ -490,12 +495,21 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				UPrimitiveComponent* prim = static_cast<UPrimitiveComponent*>(obj);
 				if (i == SelectedObjectIndex)
 				{
-					outlinePipeline->UpdateConstantBuffer(0, FOutlineConstant{ prim->GetModelMatrix(), viewProjection, FVector(1.f, 1.f, 1.f), 0.03f });
-					renderer.RenderPrimitive(outlinePipeline, prim->GetStaticMesh()->VertexBuffer, prim->GetStaticMesh()->VertexCount);
+					TSharedPtr<URenderPipeline> pipeline = outlinePipeline;
+					if (prim->IsA<UPlaneComp>())
+					{
+						planeOutlinePipeline->UpdateConstantBuffer(0, FOutlineConstant{ prim->GetModelMatrix(), viewProjection, FVector(1.f, 1.f, 1.f), 0.03f });
+						pipeline = planeOutlinePipeline;
+					}
+					pipeline->UpdateConstantBuffer(0, FOutlineConstant{ prim->GetModelMatrix(), viewProjection, FVector(1.f, 1.f, 1.f), 0.03f });
+					renderer.RenderPrimitive(pipeline, prim->GetStaticMesh()->VertexBuffer, prim->GetStaticMesh()->VertexCount);
 				}
 				prim->Render(renderer);
 			}
 		}
+
+		renderer.RenderWorldAxis(view, projection, FVector4(0.f, 0.f, 1.f, 1.f), Up, 2.0f);
+		renderer.RenderWorldGrid(viewProjection, camera->RelativeLocation);
 
 		ImGui_ImplDX11_NewFrame();
 		ImGui_ImplWin32_NewFrame();

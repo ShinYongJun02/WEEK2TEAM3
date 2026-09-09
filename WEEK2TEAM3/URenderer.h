@@ -10,6 +10,9 @@ class URenderer
 	struct FConstants
 	{
 		FMatrix Matrix;
+		FVector4 Color;
+		int32 UseVertexColor;
+		int32 Padding[3];
 	};
 
 	struct FLine2DConstants
@@ -90,38 +93,38 @@ public:
 		CreateDepthStencilBuffer();
 
 		DefaultPipeline = MakeShared<URenderPipeline>(Device, DeviceContext);
-		DefaultPipeline->SetCullMode(D3D11_CULL_BACK);
+		DefaultPipeline->SetRasterRizerState(D3D11_CULL_BACK);
 		DefaultPipeline->SetDepthStencilState(true, true);
 		DefaultPipeline->SetShader("Assets/Shaders/ShaderW0.hlsl");
 		DefaultPipeline->AddConstantBuffer<FConstants>();
 		DefaultPipeline->AddConstantBuffer<FConstants>();
 
 		Line2DPipeline = MakeShared<URenderPipeline>(Device, DeviceContext);
-		Line2DPipeline->SetCullMode(D3D11_CULL_NONE);
+		Line2DPipeline->SetRasterRizerState(D3D11_CULL_NONE);
 		Line2DPipeline->SetDepthStencilState(false, false);
 		Line2DPipeline->SetShader("Assets/Shaders/Line2D.hlsl");
 		Line2DPipeline->AddConstantBuffer<FLine2DConstants>();
 
 		Circle2DPipeline = MakeShared<URenderPipeline>(Device, DeviceContext);
-		Circle2DPipeline->SetCullMode(D3D11_CULL_NONE);
+		Circle2DPipeline->SetRasterRizerState(D3D11_CULL_NONE);
 		Circle2DPipeline->SetDepthStencilState(false, false);
 		Circle2DPipeline->SetShader("Assets/Shaders/Circle2D.hlsl");
 		Circle2DPipeline->AddConstantBuffer<FCircle2DConstants>();
 
 		Triangle2DPipeline = MakeShared<URenderPipeline>(Device, DeviceContext);
-		Triangle2DPipeline->SetCullMode(D3D11_CULL_NONE);
+		Triangle2DPipeline->SetRasterRizerState(D3D11_CULL_NONE);
 		Triangle2DPipeline->SetDepthStencilState(false, false);
 		Triangle2DPipeline->SetShader("Assets/Shaders/Triangle2D.hlsl");
 		Triangle2DPipeline->AddConstantBuffer<FTriangle2DConstants>();
 
 		WorldAxisPipeline = MakeShared<URenderPipeline>(Device, DeviceContext);
-		WorldAxisPipeline->SetCullMode(D3D11_CULL_NONE);
+		WorldAxisPipeline->SetRasterRizerState(D3D11_CULL_NONE);
 		WorldAxisPipeline->SetDepthStencilState(true, true);
 		WorldAxisPipeline->SetShader("Assets/Shaders/WorldAxis.hlsl");
 		WorldAxisPipeline->AddConstantBuffer<FWorldAxisConstants>();
 
 		WorldGridPipeline = MakeShared<URenderPipeline>(Device, DeviceContext);
-		WorldGridPipeline->SetCullMode(D3D11_CULL_NONE);
+		WorldGridPipeline->SetRasterRizerState(D3D11_CULL_NONE);
 		WorldGridPipeline->SetDepthStencilState(true, false);
 
 		CD3D11_BLEND_DESC blendDesc = {};
@@ -347,7 +350,7 @@ public:
 		DefaultPipeline->UpdateConstantBuffer(1, FConstants{ view });
 	}
 
-	void RenderPrimitive(const TSharedPtr<URenderPipeline>& pipeline, ID3D11Buffer* pBuffer, UINT numVertices) const
+	void BindPipeline(const TSharedPtr<URenderPipeline>& pipeline) const
 	{
 		DeviceContext->RSSetState(pipeline->RasterizerState);
 		DeviceContext->OMSetDepthStencilState(pipeline->DepthStencilState, 0);
@@ -356,14 +359,29 @@ public:
 		DeviceContext->VSSetShader(pipeline->VertexShader, nullptr, 0);
 		DeviceContext->PSSetShader(pipeline->PixelShader, nullptr, 0);
 		DeviceContext->VSSetConstantBuffers(0, pipeline->ConstantBuffers.size(), pipeline->ConstantBuffers.data());
+		DeviceContext->PSSetConstantBuffers(0, pipeline->ConstantBuffers.size(), pipeline->ConstantBuffers.data());
+	}
+
+	void RenderPrimitive(const TSharedPtr<URenderPipeline>& pipeline, ID3D11Buffer* pBuffer, UINT numVertices) const
+	{
+		BindPipeline(pipeline);
 
 		UINT offset = 0;
 		DeviceContext->IASetVertexBuffers(0, 1, &pBuffer, &pipeline->Stride, &offset);
 		DeviceContext->Draw(numVertices, 0);
 	}
 
-	void RenderPrimitive(ID3D11Buffer* pBuffer, UINT numVertices) const
+	void RenderPrimitive(ID3D11Buffer* pBuffer, UINT numVertices, const FMatrix& model) const
 	{
+		DefaultPipeline->UpdateConstantBuffer(0, FConstants{ model, FVector4(1.0f, 1.0f, 1.0f, 1.0f), 1 });
+
+		RenderPrimitive(DefaultPipeline, pBuffer, numVertices);
+	}
+
+	void RenderPrimitive(ID3D11Buffer* pBuffer, UINT numVertices, const FMatrix& model, const FVector4& color) const
+	{
+		DefaultPipeline->UpdateConstantBuffer(0, FConstants{ model, color, 0 });
+
 		RenderPrimitive(DefaultPipeline, pBuffer, numVertices);
 	}
 
@@ -371,13 +389,7 @@ public:
 	{
 		Line2DPipeline->UpdateConstantBuffer(0, FLine2DConstants{ Projection2D, color, start, end, thickness });
 
-		DeviceContext->RSSetState(Line2DPipeline->RasterizerState);
-		DeviceContext->OMSetDepthStencilState(Line2DPipeline->DepthStencilState, 0);
-		DeviceContext->OMSetBlendState(Line2DPipeline->BlendState, nullptr, 0xffffffff);
-		DeviceContext->IASetInputLayout(nullptr);
-		DeviceContext->VSSetShader(Line2DPipeline->VertexShader, nullptr, 0);
-		DeviceContext->PSSetShader(Line2DPipeline->PixelShader, nullptr, 0);
-		DeviceContext->VSSetConstantBuffers(0, Line2DPipeline->ConstantBuffers.size(), Line2DPipeline->ConstantBuffers.data());
+		BindPipeline(Line2DPipeline);
 
 		UINT offset = 0;
 		DeviceContext->IASetVertexBuffers(0, 0, NULL, NULL, &offset);
@@ -388,14 +400,7 @@ public:
 	{
 		Circle2DPipeline->UpdateConstantBuffer(0, FCircle2DConstants{ Projection2D, color, center, radius });
 
-		DeviceContext->RSSetState(Circle2DPipeline->RasterizerState);
-		DeviceContext->OMSetDepthStencilState(Circle2DPipeline->DepthStencilState, 0);
-		DeviceContext->OMSetBlendState(Circle2DPipeline->BlendState, nullptr, 0xffffffff);
-		DeviceContext->IASetInputLayout(nullptr);
-		DeviceContext->VSSetShader(Circle2DPipeline->VertexShader, nullptr, 0);
-		DeviceContext->PSSetShader(Circle2DPipeline->PixelShader, nullptr, 0);
-		DeviceContext->VSSetConstantBuffers(0, Circle2DPipeline->ConstantBuffers.size(), Circle2DPipeline->ConstantBuffers.data());
-		DeviceContext->PSSetConstantBuffers(0, Circle2DPipeline->ConstantBuffers.size(), Circle2DPipeline->ConstantBuffers.data());
+		BindPipeline(Circle2DPipeline);
 
 		UINT offset = 0;
 		DeviceContext->IASetVertexBuffers(0, 0, NULL, NULL, &offset);
@@ -406,13 +411,7 @@ public:
 	{
 		Triangle2DPipeline->UpdateConstantBuffer(0, FTriangle2DConstants{ Projection2D, color, center, size, rotation - PI * 0.5f });
 
-		DeviceContext->RSSetState(Triangle2DPipeline->RasterizerState);
-		DeviceContext->OMSetDepthStencilState(Triangle2DPipeline->DepthStencilState, 0);
-		DeviceContext->OMSetBlendState(Triangle2DPipeline->BlendState, nullptr, 0xffffffff);
-		DeviceContext->IASetInputLayout(nullptr);
-		DeviceContext->VSSetShader(Triangle2DPipeline->VertexShader, nullptr, 0);
-		DeviceContext->PSSetShader(Triangle2DPipeline->PixelShader, nullptr, 0);
-		DeviceContext->VSSetConstantBuffers(0, Triangle2DPipeline->ConstantBuffers.size(), Triangle2DPipeline->ConstantBuffers.data());
+		BindPipeline(Triangle2DPipeline);
 
 		UINT offset = 0;
 		DeviceContext->IASetVertexBuffers(0, 0, NULL, NULL, &offset);
@@ -422,15 +421,9 @@ public:
 	void RenderWorldAxis(const FMatrix& view, const FMatrix& projection, const FVector4& color, const FVector& axis, float thickness = 1.0f) const
 	{
 		WorldAxisPipeline->UpdateConstantBuffer(0, FWorldAxisConstants{ view, projection, color, axis, thickness });
-		
-		DeviceContext->RSSetState(WorldAxisPipeline->RasterizerState);
-		DeviceContext->OMSetDepthStencilState(WorldAxisPipeline->DepthStencilState, 0);
-		DeviceContext->OMSetBlendState(WorldAxisPipeline->BlendState, nullptr, 0xffffffff);
-		DeviceContext->IASetInputLayout(nullptr);
-		DeviceContext->VSSetShader(WorldAxisPipeline->VertexShader, nullptr, 0);
-		DeviceContext->PSSetShader(WorldAxisPipeline->PixelShader, nullptr, 0);
-		DeviceContext->VSSetConstantBuffers(0, WorldAxisPipeline->ConstantBuffers.size(), WorldAxisPipeline->ConstantBuffers.data());
 
+		BindPipeline(WorldAxisPipeline);
+		
 		UINT offset = 0;
 		DeviceContext->IASetVertexBuffers(0, 0, NULL, NULL, &offset);
 		DeviceContext->Draw(6, 0);
@@ -440,13 +433,7 @@ public:
 	{
 		WorldGridPipeline->UpdateConstantBuffer(0, FWorldGridConstants{ viewProjection, cameraPosition });
 
-		DeviceContext->RSSetState(WorldGridPipeline->RasterizerState);
-		DeviceContext->OMSetDepthStencilState(WorldGridPipeline->DepthStencilState, 0);
-		DeviceContext->OMSetBlendState(WorldGridPipeline->BlendState, nullptr, 0xffffffff);
-		DeviceContext->IASetInputLayout(nullptr);
-		DeviceContext->VSSetShader(WorldGridPipeline->VertexShader, nullptr, 0);
-		DeviceContext->PSSetShader(WorldGridPipeline->PixelShader, nullptr, 0);
-		DeviceContext->VSSetConstantBuffers(0, WorldGridPipeline->ConstantBuffers.size(), WorldGridPipeline->ConstantBuffers.data());
+		BindPipeline(WorldGridPipeline);
 
 		UINT offset = 0;
 		DeviceContext->IASetVertexBuffers(0, 0, NULL, NULL, &offset);

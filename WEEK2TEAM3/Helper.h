@@ -194,7 +194,7 @@ static float DistanceSquared(const FVector& a, const FVector& b)
 	return (a - b).LengthSquared();
 }
 
-static bool Raycast(const FRay& ray, const FTriangle& triangle, FVector& outPoint)
+static float Raycast(const FRay& ray, const FTriangle& triangle)
 {
 	FVector E1 = triangle.P1 - triangle.P0;
 	FVector E2 = triangle.P2 - triangle.P0;
@@ -204,7 +204,7 @@ static bool Raycast(const FRay& ray, const FTriangle& triangle, FVector& outPoin
 	float det = Dot(E1, H);
 	if (EpsilonEqual(det, 0.0f))
 	{
-		return false; // Ray is parallel to the triangle
+		return -1.0f; // Ray is parallel to the triangle
 	}
 
 	FVector S = ray.Origin - triangle.P0;
@@ -212,7 +212,7 @@ static bool Raycast(const FRay& ray, const FTriangle& triangle, FVector& outPoin
 	float u = Dot(S, H) / det;
 	if (u < 0.0f || u > 1.0f)
 	{
-		return false; // Intersection point is outside the triangle
+		return -1.0f; // Intersection point is outside the triangle
 	}
 
 	FVector Q = Cross(S, E1);
@@ -220,17 +220,16 @@ static bool Raycast(const FRay& ray, const FTriangle& triangle, FVector& outPoin
 	float v = Dot(ray.Direction, Q) / det;
 	if (v < 0.0f || u + v > 1.0f)
 	{
-		return false; // Intersection point is outside the triangle
+		return -1.0f; // Intersection point is outside the triangle
 	}
 
 	float t = Dot(E2, Q) / det;
 	if (t < Epsilon)
 	{
-		return false; // Intersection point is behind the ray origin
+		return -1.0f; // Intersection point is behind the ray origin
 	}
 
-	outPoint = ray.Origin + ray.Direction * t;
-	return true;
+	return t;
 }
 
 static FVector2 WorldToScreen(const FVector& worldPos, const FMatrix& viewProjection, int32 screenWidth, int32 screenHeight)
@@ -324,15 +323,15 @@ static float PointToLineSegmentDistanceSquared(const FVector& point, const FVect
 	return DistanceSquared(point, closest);
 }
 
-static void GenerateCircleVertices(const std::function<void(int32 index, const FVector2&)>& handler, const FVector2& center, float radius, int segments)
+static void GenerateCircleVertices(const std::function<void(int32 index, const FVector2&)>& handler, float radius, int segments)
 {
 	const float step = 2.0f * PI / static_cast<float>(segments);
 
 	for (int32 i = 0; i < segments; ++i)
 	{
 		float angle = step * static_cast<float>(i);
-		float x = center.x + radius * cos(angle);
-		float y = center.y + radius * sin(angle);
+		float x = radius * cos(angle);
+		float y = radius * sin(angle);
 
 		handler(i, FVector2(x, y));
 	}
