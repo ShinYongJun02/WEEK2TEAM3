@@ -7,11 +7,22 @@
 class UEngineStatics
 {
 public:
-	static FUUID GetUUID()
+	static FUUID GenUUID()
 	{
-		return FUUID::NewUUID();
+		FUUID ResultUUID = NextUUID;
+		NextUUID = FUUID::NewUUID();;
+		return ResultUUID;
+	}
+	
+	static FUUID GetNexUUID()
+	{
+		return NextUUID;
 	}
 
+	static void SetNextUUID(FUUID InUUID)
+	{
+		NextUUID = InUUID;
+	}
 private:
-	inline static uint32 NextUUID = 0;
+	inline static FUUID NextUUID;
 };

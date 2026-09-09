@@ -23,7 +23,7 @@ public:
 
 		Out << "{\n";
 		Out << "\t\"Version\" : " << SceneVersion << ",\n";
-		Out << "\t\"NextUUID\" : \"" << UEngineStatics::GetUUID().ToString() << "\",\n";
+		Out << "\t\"NextUUID\" : \"" << UEngineStatics::GetNexUUID().ToString() << "\",\n";
 		Out << "\t\"Primitives\" : {\n";
 
 		bool bFirst = true;
@@ -77,6 +77,12 @@ public:
 			return false;
 		}
 
+		const FJsonValue* NextUUIDValue = Root.Find("NextUUID");
+		if (!NextUUIDValue || VersionValue->Type != FJsonValue::EType::String)
+		{
+			return false;
+		}
+		
 		const FJsonValue* PrimitivesValue = Root.Find("Primitives");
 		if (!PrimitivesValue || PrimitivesValue->Type != FJsonValue::EType::Block)
 		{

@@ -46,6 +46,11 @@ struct FJsonValue
 		Out = FVector(List[0].AsFloat(), List[1].AsFloat(), List[2].AsFloat());
 		return true;
 	}
+
+	FString AsString() const
+	{
+		return String;
+	}
 };
 
 class FJsonParser

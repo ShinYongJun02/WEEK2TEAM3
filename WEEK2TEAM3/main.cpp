@@ -409,13 +409,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		float mappedX = Remap(mouseX, 0, renderer.GetWidth(), -1.f, 1.f);
 		float mappedY = -Remap(mouseY, 0, renderer.GetHeight(), -1.f, 1.f);
 
-		POINT temp;
-		GetCursorPos(&temp);          // 화면 좌표
-		//ScreenToClient(hWnd, &temp);  // 클라이언트 좌표로 변환
-		//float distX = temp.x - pt.x;
-		//float distY = pt.y - temp.y;
-		//pt = temp;
-
 		UCamera* camera;
 		if (usePerspectiveCamera)
 		{
@@ -438,7 +431,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		if (pressed[6])
 		{
 			camera->RelativeRotation += FVector(0.0f, distY, distX) * cameraSpeed;
-			UE_LOG(debug, Info, "DeltaTime : .%f , Camera *  DeltaTime : .%f", deltaTime, deltaTime * cameraSpeed);
 		}
 
 		FMatrix view = camera->GetViewMatrix();

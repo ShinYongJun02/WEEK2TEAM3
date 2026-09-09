@@ -27,11 +27,11 @@ FUUID FUUID::NewUUID()
 {
 	std::uniform_int_distribution<uint32> distribution(0, UINT32_MAX);
 
-	FUUID result;
-	result.A = distribution(GGenerator);
-	result.B = distribution(GGenerator);
-	result.C = distribution(GGenerator);
-	result.D = distribution(GGenerator);
+	FUUID ResultUUID;
+	ResultUUID.A = distribution(GGenerator);
+	ResultUUID.B = distribution(GGenerator);
+	ResultUUID.C = distribution(GGenerator);
+	ResultUUID.D = distribution(GGenerator);
 
-	return result;
+	return ResultUUID;
 }
