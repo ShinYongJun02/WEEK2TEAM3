@@ -1,4 +1,4 @@
-# WEEK2TEAM3
+# WEEK2 TEAM3
 
 DirectX 11 기반의 미니 3D 씬 에디터입니다. 언리얼 엔진의 오브젝트 모델(`UObject` / `USceneComponent` / `UPrimitiveComponent`)과
 좌표계 규약(X=Front, Y=Right, Z=Up)을 흉내 낸 C++20 Win32 애플리케이션으로, 프리미티브를 배치·선택·조작하고
@@ -160,39 +160,6 @@ DX 좌표계(X=Right, Y=Up, Z=Front)로 변환합니다.
 
 ---
 
-## 빌드 및 실행
-
-### 요구 사항
-- Windows 10/11
-- Visual Studio 2022 (MSVC, C++20)
-- Windows SDK (d3d11, d3dcompiler, dxgi 등)
-- [premake5](https://premake.github.io/) (프로젝트 파일 재생성 시)
-
-### 빌드
-
-이미 생성된 솔루션을 사용하는 경우:
-
-```bash
-start WEEK2TEAM3.sln
-```
-
-premake로 프로젝트 파일을 다시 생성하려면:
-
-```bash
-premake5 vs2022
-```
-
-Visual Studio에서 `x64 | Debug` 구성으로 빌드 후 실행합니다.
-디버그 작업 디렉터리는 솔루션 루트(`debugdir "%{wks.location}"`)이며, 셰이더를 `Assets/Shaders/` 상대 경로로 로드하므로
-반드시 루트에서 실행해야 합니다.
-
-출력 위치: `WEEK2TEAM3/bin/x64/Debug/WEEK2TEAM3.exe`
-
-### 링크 라이브러리
-`d3d11`, `d3dcompiler`, `dwrite`, `d2d1`, `dxgi`, `dwmapi`, `gdi32`, `imm32`, `user32`
-
----
-
 ## 조작법
 
 | 입력 | 동작 |
@@ -214,9 +181,5 @@ Visual Studio에서 `x64 | Debug` 구성으로 빌드 후 실행합니다.
 - **Place Actors** — FPS, 프리미티브 스폰/삭제, 씬 New/Save/Load, 카메라 설정, 기즈모 모드 버튼, 메모리 통계
 
 ---
-
-## 사용 라이브러리
-
-- [Dear ImGui](https://github.com/ocornut/imgui) (Win32 + DirectX 11 백엔드) — `WEEK2TEAM3/ImGui/`
 
 그 외 수학, JSON 파싱, 메모리 할당은 모두 직접 구현했습니다.
