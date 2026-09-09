@@ -21,7 +21,7 @@ public:
 	void Release();
 
 	void SetRasterRizerState(D3D11_CULL_MODE CullMode, int32 DepthBias = 0);
-	void SetDepthStencilState(bool EnableDepthTest, bool EnableDepthWrite);
+	void SetDepthStencilState(bool bEnableDepthTest, bool bEnableDepthWrite);
 	void SetBlendState(const D3D11_BLEND_DESC& BlendDesc);
 	void SetShader(const FString& ShaderPath);
 

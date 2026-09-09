@@ -272,7 +272,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 	// 종료 시그널
 	bool bIsExit = false;
 
-	bool UsePerspectiveCamera = true;
+	bool bUsePerspectiveCamera = true;
 
 	struct FOutlineConstant
 	{
@@ -297,7 +297,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 	FConsoleWindow ConsoleWindow;
 	FGizmo Gizmo(Renderer, InputContext);
 
-	bool CurrentGizmoWorldMode = true;
+	bool bCurrentGizmoWorldMode = true;
 	EGizmoOperation CurrentGizmoOperation = EGizmoOperation::Translate;
 
 	UE_LOG(Test, Info, "Game Tech Lab Start!");
@@ -342,11 +342,11 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 		}
 		else if (InputContext.IsKeyDown('V'))
 		{
-			CurrentGizmoWorldMode = true;
+			bCurrentGizmoWorldMode = true;
 		}
 		else if (InputContext.IsKeyDown('B'))
 		{
-			CurrentGizmoWorldMode = false;
+			bCurrentGizmoWorldMode = false;
 		}
 
 		// 마우스 추적
@@ -358,7 +358,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 		LastMouseY = MouseY;
 
 		UCamera* Camera;
-		if (UsePerspectiveCamera)
+		if (bUsePerspectiveCamera)
 		{
 			Camera = &PerspectiveCamera;
 		}
@@ -555,7 +555,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 			}
 #else
 			Gizmo.SetOperation(CurrentGizmoOperation);
-			Gizmo.SetWorldMode(CurrentGizmoWorldMode);
+			Gizmo.SetWorldMode(bCurrentGizmoWorldMode);
 			Gizmo.Draw(*SelectedObject, Camera->RelativeLocation, ViewProjection);
 #endif
 		}
@@ -665,14 +665,14 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 
 		if (ImGui::Button("World", ImVec2(100, 0)))
 		{
-			CurrentGizmoWorldMode = true;
+			bCurrentGizmoWorldMode = true;
 		}
 
 		ImGui::SameLine();
 
 		if (ImGui::Button("Local", ImVec2(100, 0)))
 		{
-			CurrentGizmoWorldMode = false;
+			bCurrentGizmoWorldMode = false;
 		}
 
 
@@ -685,9 +685,9 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 			ImGui::DragFloat("HalfHeight", &OrthoCamera.HalfHeight, 0.1f);
 		}
 
-		if (ImGui::Checkbox("Use Perspective Camera", &UsePerspectiveCamera))
+		if (ImGui::Checkbox("Use Perspective Camera", &bUsePerspectiveCamera))
 		{
-			if (UsePerspectiveCamera)
+			if (bUsePerspectiveCamera)
 			{
 				PerspectiveCamera.RelativeLocation = Camera->RelativeLocation;
 				PerspectiveCamera.RelativeRotation = Camera->RelativeRotation;

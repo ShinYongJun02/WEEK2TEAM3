@@ -13,7 +13,7 @@ enum class EGizmoOperation
 	Scale
 };
 
-enum class AxisNumber
+enum class EAxisNumber
 {
 	None,
 	X,
@@ -28,13 +28,13 @@ public:
 	FGizmo(FRenderer& InRenderer, FInputContext& InInputContext)
 		: Renderer(InRenderer)
 		, InputContext(InInputContext)
-		, SelectedAxis(AxisNumber::None)
+		, SelectedAxis(EAxisNumber::None)
 	{
 	}
 
-	inline void SetWorldMode(bool InWorldMode)
+	inline void SetWorldMode(bool bInWorldMode)
 	{
-		WorldMode = InWorldMode;
+		bWorldMode = bInWorldMode;
 	}
 
 	inline void SetOperation(EGizmoOperation Operation)
@@ -62,14 +62,14 @@ public:
 
 		FVector2 Center = WorldToScreen(SceneComp.RelativeLocation, ViewProjection, ScreenWidth, ScreenHeight);
 
-		enum class AxisEndPointStyle
+		enum class EAxisEndPointStyle
 		{
 			None,
 			Arrow,
 			Circle
 		};
 
-		auto DrawLineAxis = [&](const FVector& DrawAxis, const FVector& ApplyAxis, const FVector4& Color, AxisEndPointStyle Style, AxisNumber Axis)
+		auto DrawLineAxis = [&](const FVector& DrawAxis, const FVector& ApplyAxis, const FVector4& Color, EAxisEndPointStyle Style, EAxisNumber Axis)
 		{
 			FVector2 ClosestPoint = WorldToScreen(SceneComp.RelativeLocation + DrawAxis * AxisLength, ViewProjection, ScreenWidth, ScreenHeight);
 
@@ -77,7 +77,7 @@ public:
 
 			FVector4 AxisColor = (Axis == SelectedAxis) ? SelectColor : Color;
 
-			if (!IsSelected && bHoverEnabled && PointToLineSegmentDistanceSquared(MousePos, Center, ClosestPoint) < 5.f * 5.f)
+			if (!bIsSelected && bHoverEnabled && PointToLineSegmentDistanceSquared(MousePos, Center, ClosestPoint) < 5.f * 5.f)
 			{
 				if (bGrabAxis)
 				{
@@ -85,7 +85,7 @@ public:
 					AxisDirection = ApplyAxis;
 					HandleScreenDirection = ClosestPoint - Center;
 					HandleScreenDirection.Normalize();
-					IsSelected = true;
+					bIsSelected = true;
 					SelectedAxis = Axis;
 				}
 				AxisColor = FVector4(1.f, 1.f, 0.f, 1.f);
@@ -93,14 +93,14 @@ public:
 
 			Renderer.RenderLine2D(Center, ClosestPoint, AxisColor, 5.f);
 
-			if (Style == AxisEndPointStyle::Arrow)
+			if (Style == EAxisEndPointStyle::Arrow)
 			{
 				FVector2 ScreenAxis = ClosestPoint - Center;
 				ScreenAxis.Normalize();
 				float Angle = atan2(ScreenAxis.Y, ScreenAxis.X);
 				Renderer.RenderTriangle2D(ClosestPoint, AxisColor, 20.f, Angle);
 			}
-			else if (Style == AxisEndPointStyle::Circle)
+			else if (Style == EAxisEndPointStyle::Circle)
 			{
 				Renderer.RenderCircle2D(ClosestPoint, AxisColor, 8.f);
 			}
@@ -108,7 +108,7 @@ public:
 			Renderer.RenderCircle2D(Center, FVector4(0.8f, 0.8f, 0.8f, 1.f), 5.f);
 		};
 
-		auto DrawCircleAxis = [&](const FVector& U, const FVector& V, const FVector4& Color, bool bNoClipping = false, AxisNumber Axis = AxisNumber::None)
+		auto DrawCircleAxis = [&](const FVector& U, const FVector& V, const FVector4& Color, bool bNoClipping = false, EAxisNumber Axis = EAxisNumber::None)
 		{
 			const int32 NumSegments = 32;
 
@@ -119,7 +119,7 @@ public:
 
 			FVector4 AxisColor = Color;
 
-			if (Axis != AxisNumber::None)
+			if (Axis != EAxisNumber::None)
 			{
 				AxisColor = (Axis == SelectedAxis) ? SelectColor : Color;
 			}
@@ -149,10 +149,10 @@ public:
 							AxisDirection = U.Cross(V);
 							HandleScreenDirection = ScreenPoint - CircleScreenPoints[Index - 1];
 							HandleScreenDirection.Normalize();
-							IsSelected = true;
+							bIsSelected = true;
 							SelectedAxis = Axis;
 						}
-						if (!IsSelected)
+						if (!bIsSelected)
 							AxisColor = FVector4(1.f, 1.f, 0.f, 1.f);
 					}
 				}
@@ -175,10 +175,10 @@ public:
 							AxisDirection = U.Cross(V);
 							HandleScreenDirection = CircleScreenPoints[0] - ScreenPoint;
 							HandleScreenDirection.Normalize();
-							IsSelected = true;
+							bIsSelected = true;
 							SelectedAxis = Axis;
 						}
-						if (!IsSelected)
+						if (!bIsSelected)
 							AxisColor = FVector4(1.f, 1.f, 0.f, 1.f);
 					}
 				}
@@ -207,23 +207,23 @@ public:
 
 		if (bDrawGizmo &&CurrentOperation == EGizmoOperation::Translate)
 		{
-			FVector ForwardAxis = WorldMode ? Front : SceneComp.GetForward();
-			FVector RightAxis = WorldMode ? Right : SceneComp.GetRight();
-			FVector UpAxis = WorldMode ? Up : SceneComp.GetUp();
+			FVector ForwardAxis = bWorldMode ? Front : SceneComp.GetForward();
+			FVector RightAxis = bWorldMode ? Right : SceneComp.GetRight();
+			FVector UpAxis = bWorldMode ? Up : SceneComp.GetUp();
 
-			DrawLineAxis(ForwardAxis, ForwardAxis, FVector4(1.f, 0.f, 0.f, 1.f), AxisEndPointStyle::Arrow, AxisNumber::X);
-			DrawLineAxis(RightAxis, RightAxis, FVector4(0.f, 1.f, 0.f, 1.f), AxisEndPointStyle::Arrow, AxisNumber::Y);
-			DrawLineAxis(UpAxis, UpAxis, FVector4(0.f, 0.f, 1.f, 1.f), AxisEndPointStyle::Arrow, AxisNumber::Z);
+			DrawLineAxis(ForwardAxis, ForwardAxis, FVector4(1.f, 0.f, 0.f, 1.f), EAxisEndPointStyle::Arrow, EAxisNumber::X);
+			DrawLineAxis(RightAxis, RightAxis, FVector4(0.f, 1.f, 0.f, 1.f), EAxisEndPointStyle::Arrow, EAxisNumber::Y);
+			DrawLineAxis(UpAxis, UpAxis, FVector4(0.f, 0.f, 1.f, 1.f), EAxisEndPointStyle::Arrow, EAxisNumber::Z);
 		}
 		else if (bDrawGizmo && CurrentOperation == EGizmoOperation::Rotate)
 		{
-			FVector ForwardAxis = WorldMode ? Front : SceneComp.GetForward();
-			FVector RightAxis = WorldMode ? Right : SceneComp.GetRight();
-			FVector UpAxis = WorldMode ? Up : SceneComp.GetUp();
+			FVector ForwardAxis = bWorldMode ? Front : SceneComp.GetForward();
+			FVector RightAxis = bWorldMode ? Right : SceneComp.GetRight();
+			FVector UpAxis = bWorldMode ? Up : SceneComp.GetUp();
 
-			DrawCircleAxis(RightAxis, UpAxis, FVector4(1.f, 0.f, 0.f, 1.f),false, AxisNumber::X);
-			DrawCircleAxis(ForwardAxis, UpAxis, FVector4(0.f, 1.f, 0.f, 1.f), false, AxisNumber::Y);
-			DrawCircleAxis(RightAxis, ForwardAxis, FVector4(0.f, 0.f, 1.f, 1.f),false , AxisNumber::Z);
+			DrawCircleAxis(RightAxis, UpAxis, FVector4(1.f, 0.f, 0.f, 1.f),false, EAxisNumber::X);
+			DrawCircleAxis(ForwardAxis, UpAxis, FVector4(0.f, 1.f, 0.f, 1.f), false, EAxisNumber::Y);
+			DrawCircleAxis(RightAxis, ForwardAxis, FVector4(0.f, 0.f, 1.f, 1.f),false , EAxisNumber::Z);
 
 			FVector CameraAxisU = Cross(CenterToCamera, Up);
 			CameraAxisU.Normalize();
@@ -231,7 +231,7 @@ public:
 			FVector CameraAxisV = Cross(CameraAxisU, CenterToCamera);
 			CameraAxisV.Normalize();
 
-			DrawCircleAxis(CameraAxisU, CameraAxisV, FVector4(1.f, 1.f, 1.f, 1.f), true, AxisNumber::Cameara);
+			DrawCircleAxis(CameraAxisU, CameraAxisV, FVector4(1.f, 1.f, 1.f, 1.f), true, EAxisNumber::Cameara);
 		}
 		else if (bDrawGizmo && CurrentOperation == EGizmoOperation::Scale)
 		{
@@ -239,12 +239,12 @@ public:
 			FVector RightAxis = SceneComp.GetRight();
 			FVector UpAxis = SceneComp.GetUp();
 
-			DrawLineAxis(ForwardAxis, Front, FVector4(0.f, 1.f, 0.f, 1.f), AxisEndPointStyle::Circle, AxisNumber::X);
-			DrawLineAxis(RightAxis, Right, FVector4(1.f, 0.f, 0.f, 1.f), AxisEndPointStyle::Circle , AxisNumber::Y);
-			DrawLineAxis(UpAxis, Up, FVector4(0.f, 0.f, 1.f, 1.f), AxisEndPointStyle::Circle, AxisNumber::Z);
+			DrawLineAxis(ForwardAxis, Front, FVector4(0.f, 1.f, 0.f, 1.f), EAxisEndPointStyle::Circle, EAxisNumber::X);
+			DrawLineAxis(RightAxis, Right, FVector4(1.f, 0.f, 0.f, 1.f), EAxisEndPointStyle::Circle , EAxisNumber::Y);
+			DrawLineAxis(UpAxis, Up, FVector4(0.f, 0.f, 1.f, 1.f), EAxisEndPointStyle::Circle, EAxisNumber::Z);
 		}
 
-		if (IsSelected)
+		if (bIsSelected)
 		{
 			if (InputContext.IsMouseButtonPressed(0))
 			{
@@ -278,8 +278,8 @@ public:
 
 			if (InputContext.IsMouseButtonUp(0))
 			{
-				IsSelected = false;
-				SelectedAxis = AxisNumber::None;
+				bIsSelected = false;
+				SelectedAxis = EAxisNumber::None;
 			}
 		}
 	}
@@ -288,12 +288,12 @@ private:
 	FRenderer& Renderer;
 	FInputContext& InputContext;
 
-	bool WorldMode = true;
+	bool bWorldMode = true;
 	EGizmoOperation CurrentOperation = EGizmoOperation::Translate;
 
 	FVector2 PrevMousePos;
-	bool IsSelected = false;
+	bool bIsSelected = false;
 	FVector AxisDirection; // World +
 	FVector2 HandleScreenDirection;
-	AxisNumber SelectedAxis;
+	EAxisNumber SelectedAxis;
 };

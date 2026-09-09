@@ -66,7 +66,7 @@ void FRenderPipeline::SetRasterRizerState(D3D11_CULL_MODE CullMode, int32 DepthB
 	Device->CreateRasterizerState(&RasterizerDesc, &RasterizerState);
 }
 
-void FRenderPipeline::SetDepthStencilState(bool EnableDepthTest, bool EnableDepthWrite)
+void FRenderPipeline::SetDepthStencilState(bool bEnableDepthTest, bool bEnableDepthWrite)
 {
 	if (DepthStencilState)
 	{
@@ -75,8 +75,8 @@ void FRenderPipeline::SetDepthStencilState(bool EnableDepthTest, bool EnableDept
 	}
 
 	D3D11_DEPTH_STENCIL_DESC DepthStencilDesc = {};
-	DepthStencilDesc.DepthEnable = EnableDepthTest;
-	DepthStencilDesc.DepthWriteMask = EnableDepthWrite ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
+	DepthStencilDesc.DepthEnable = bEnableDepthTest;
+	DepthStencilDesc.DepthWriteMask = bEnableDepthWrite ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
 	DepthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
 
 	Device->CreateDepthStencilState(&DepthStencilDesc, &DepthStencilState);

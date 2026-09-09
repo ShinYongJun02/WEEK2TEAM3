@@ -7,8 +7,8 @@ struct FConsoleWindow
 {
 	FBitSet<3> LevelFilter;
 	ImGuiTextFilter Filter;
-	bool AutoScroll;
-	bool ScrollToBottom;
+	bool bAutoScroll;
+	bool bScrollToBottom;
 
 	FConsoleWindow()
 	{
@@ -16,14 +16,14 @@ struct FConsoleWindow
 		LevelFilter.set(1, true); // Warning
 		LevelFilter.set(2, true); // Error
 
-		AutoScroll = true;
-		ScrollToBottom = false;
+		bAutoScroll = true;
+		bScrollToBottom = false;
 	}
 
-	void Draw(const char* Title, bool* Open)
+	void Draw(const char* Title, bool* bOpen)
 	{
 		ImGui::SetNextWindowSize(ImVec2(520, 600), ImGuiCond_FirstUseEver);
-		if (!ImGui::Begin(Title, Open))
+		if (!ImGui::Begin(Title, bOpen))
 		{
 			ImGui::End();
 			return;
@@ -35,26 +35,26 @@ struct FConsoleWindow
 		}
 
 		ImGui::SameLine();
-		bool CopyToClipboard = ImGui::SmallButton("Copy");
+		bool bCopyToClipboard = ImGui::SmallButton("Copy");
 
 		ImGui::Separator();
 
 		// Options menu
 		if (ImGui::BeginPopup("Options"))
 		{
-			ImGui::Checkbox("Auto-scroll", &AutoScroll);
+			ImGui::Checkbox("Auto-scroll", &bAutoScroll);
 			
-			bool InfoFilter = LevelFilter.test(0);
-			ImGui::Checkbox("Info", &InfoFilter);
-			LevelFilter.set(0, InfoFilter);
+			bool bInfoFilter = LevelFilter.test(0);
+			ImGui::Checkbox("Info", &bInfoFilter);
+			LevelFilter.set(0, bInfoFilter);
 
-			bool WarningFilter = LevelFilter.test(1);
-			ImGui::Checkbox("Warning", &WarningFilter);
-			LevelFilter.set(1, WarningFilter);
+			bool bWarningFilter = LevelFilter.test(1);
+			ImGui::Checkbox("Warning", &bWarningFilter);
+			LevelFilter.set(1, bWarningFilter);
 
-			bool ErrorFilter = LevelFilter.test(2);
-			ImGui::Checkbox("Error", &ErrorFilter);
-			LevelFilter.set(2, ErrorFilter);
+			bool bErrorFilter = LevelFilter.test(2);
+			ImGui::Checkbox("Error", &bErrorFilter);
+			LevelFilter.set(2, bErrorFilter);
 
 			ImGui::EndPopup();
 		}
@@ -74,7 +74,7 @@ struct FConsoleWindow
 		if (ImGui::BeginChild("ScrollingRegion", ImVec2(0, 0), ImGuiChildFlags_NavFlattened, ImGuiWindowFlags_HorizontalScrollbar))
 		{
 			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1)); // Tighten spacing
-			if (CopyToClipboard)
+			if (bCopyToClipboard)
 			{
 				ImGui::LogToClipboard();
 			}
@@ -93,42 +93,42 @@ struct FConsoleWindow
 				}
 
 				ImVec4 Color;
-				bool HasColor = false;
+				bool bHasColor = false;
 
 				if (Item.Level == ELogLevel::Warning)
 				{
 					Color = ImVec4(1.0f, 1.0f, 0.4f, 1.0f);
-					HasColor = true;
+					bHasColor = true;
 				}
 				else if (Item.Level == ELogLevel::Error) 
 				{ 
 					Color = ImVec4(1.0f, 0.4f, 0.4f, 1.0f);
-					HasColor = true; 
+					bHasColor = true; 
 				}
 
-				if (HasColor)
+				if (bHasColor)
 				{
 					ImGui::PushStyleColor(ImGuiCol_Text, Color);
 				}
 
 				ImGui::TextUnformatted(Item.Message.c_str());
 
-				if (HasColor)
+				if (bHasColor)
 				{
 					ImGui::PopStyleColor();
 				}
 			}
 
-			if (CopyToClipboard)
+			if (bCopyToClipboard)
 			{
 				ImGui::LogFinish();
 			}
 
-			if (ScrollToBottom || (AutoScroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY()))
+			if (bScrollToBottom || (bAutoScroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY()))
 			{
 				ImGui::SetScrollHereY(1.0f);
 			}
-			ScrollToBottom = false;
+			bScrollToBottom = false;
 
 			ImGui::PopStyleVar();
 		}
