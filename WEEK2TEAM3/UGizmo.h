@@ -52,6 +52,10 @@ public:
 
 		FVector2 mousePos = FVector2(InputContext.GetMouseX(), InputContext.GetMouseY());
 
+		// ImGui 창이 마우스를 가져간 프레임에는 호버/잡기를 하지 않는다 (드래그 중에는 계속 유지)
+		const bool bHoverEnabled = !ImGui::GetIO().WantCaptureMouse;
+		const bool bGrabAxis = bHoverEnabled && InputContext.IsMouseButtonDown(0);
+
 		// 화면 밖에 나감
 		FVector4 clip = FVector4(sceneComp.RelativeLocation, 1.f) * viewProjection;
 		bool drawGizmo = !(clip.w <= 0.00001f || clip.z < 0.f || clip.z > clip.w || clip.x < -clip.w || clip.x > clip.w || clip.y < -clip.w || clip.y > clip.w);
@@ -73,9 +77,9 @@ public:
 
 			FVector4 axisColor = (Axis == SelectedAxis) ? selectColor : color;
 
-			if (!IsSelected && PointToLineSegmentDistanceSquared(mousePos, center, closestPoint) < 5.f * 5.f)
+			if (!IsSelected && bHoverEnabled && PointToLineSegmentDistanceSquared(mousePos, center, closestPoint) < 5.f * 5.f)
 			{
-				if (InputContext.IsMouseButtonDown(0))
+				if (bGrabAxis)
 				{
 					PrevMousePos = mousePos;
 					AxisDirection = applyAxis;
@@ -137,9 +141,9 @@ public:
 						checkInteraction = Dot(centerToLineCenterPoint, centerToCamera) >= 0.f;
 					}
 
-					if (checkInteraction && PointToLineSegmentDistanceSquared(mousePos, circleScreenPoints[index - 1], screenPoint) < 5.f * 5.f)
+					if (checkInteraction && bHoverEnabled && PointToLineSegmentDistanceSquared(mousePos, circleScreenPoints[index - 1], screenPoint) < 5.f * 5.f)
 					{
-						if (InputContext.IsMouseButtonDown(0))
+						if (bGrabAxis)
 						{
 							PrevMousePos = mousePos;
 							AxisDirection = u.Cross(v);
@@ -163,9 +167,9 @@ public:
 						checkInteraction = Dot(centerToLineCenterPoint, centerToCamera) >= 0.f;
 					}
 
-					if (checkInteraction && PointToLineSegmentDistanceSquared(mousePos, screenPoint, circleScreenPoints[0]) < 5.f * 5.f)
+					if (checkInteraction && bHoverEnabled && PointToLineSegmentDistanceSquared(mousePos, screenPoint, circleScreenPoints[0]) < 5.f * 5.f)
 					{
-						if (InputContext.IsMouseButtonDown(0))
+						if (bGrabAxis)
 						{
 							PrevMousePos = mousePos;
 							AxisDirection = u.Cross(v);

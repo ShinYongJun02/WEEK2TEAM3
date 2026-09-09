@@ -22,9 +22,9 @@ const float bottomBorder = -1.0f;
 
 class TWindowEventHandler {
 public:
-	TWindowEventHandler(URenderer& renderer, UInputContext& inputContext) 
+	TWindowEventHandler(URenderer& renderer, UInputContext& inputContext)
 		: Renderer(renderer)
-		, InputContext(inputContext) 
+		, InputContext(inputContext)
 	{
 	}
 
@@ -93,26 +93,26 @@ UPrimitiveComponent* SpawnPrimitiveByType(int typeIndex, UResourceManager& Resou
 	switch (typeIndex)
 	{
 	case 0:
-		{
-			UCubeComp* cube = (UCubeComp*)FObjectFactory::ConstructObject(UCubeComp::StaticClass());
-			cube->Initialize(ResourceManager);
-			NewPrimitive = cube;
-		}
-		break;
+	{
+		UCubeComp* cube = (UCubeComp*)FObjectFactory::ConstructObject(UCubeComp::StaticClass());
+		cube->Initialize(ResourceManager);
+		NewPrimitive = cube;
+	}
+	break;
 	case 1:
-		{
-			USphereComp* sphere = (USphereComp*)FObjectFactory::ConstructObject(USphereComp::StaticClass());
-			sphere->Initialize(ResourceManager);
-			NewPrimitive = sphere;
-		}
-		break;
+	{
+		USphereComp* sphere = (USphereComp*)FObjectFactory::ConstructObject(USphereComp::StaticClass());
+		sphere->Initialize(ResourceManager);
+		NewPrimitive = sphere;
+	}
+	break;
 	case 2:
-		{
-			UPlaneComp* plane = (UPlaneComp*)FObjectFactory::ConstructObject(UPlaneComp::StaticClass());
-			plane->Initialize(ResourceManager);
-			NewPrimitive = plane;
-		}
-		break;
+	{
+		UPlaneComp* plane = (UPlaneComp*)FObjectFactory::ConstructObject(UPlaneComp::StaticClass());
+		plane->Initialize(ResourceManager);
+		NewPrimitive = plane;
+	}
+	break;
 	}
 
 	return NewPrimitive;
@@ -415,7 +415,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		{
 			camera = &perspectiveCamera;
 		}
-		else 
+		else
 		{
 			camera = &orthoCamera;
 		}
@@ -443,27 +443,35 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		FVector4 worldPos = ndcPos * invViewProjection;
 		worldPos /= worldPos.w;
 
+		ImGui_ImplDX11_NewFrame();
+		ImGui_ImplWin32_NewFrame();
+		ImGui::NewFrame();
+		ImGuizmo::BeginFrame();
+
 		if (inputContext.IsMouseButtonDown(0)) {
-			SelectedObjectIndex = -1;
-			FRay ray;
-			ray.Origin = camera->RelativeLocation;
-			ray.Direction = FVector(worldPos.x, worldPos.y, worldPos.z) - camera->RelativeLocation;
-			ray.Direction.Normalize();
-
-			float closestT = FLT_MAX;
-			for (int i = 0; i < GUObjectArray.size(); i++)
+			if (!ImGui::GetIO().WantCaptureMouse)
 			{
-				if (!GUObjectArray[i]->IsA<UPrimitiveComponent>())
-				{
-					continue;
-				}
+				SelectedObjectIndex = -1;
+				FRay ray;
+				ray.Origin = camera->RelativeLocation;
+				ray.Direction = FVector(worldPos.x, worldPos.y, worldPos.z) - camera->RelativeLocation;
+				ray.Direction.Normalize();
 
-				UPrimitiveComponent* SelectedObject = static_cast<UPrimitiveComponent*>(GUObjectArray[i]);
-				float t = SelectedObject->CheckIntersection(ray);
-				if (t >= 0.0f && t < closestT)
+				float closestT = FLT_MAX;
+				for (int i = 0; i < GUObjectArray.size(); i++)
 				{
-					closestT = t;
-					SelectedObjectIndex = SelectedObject->InternalIndex;
+					if (!GUObjectArray[i]->IsA<UPrimitiveComponent>())
+					{
+						continue;
+					}
+
+					UPrimitiveComponent* SelectedObject = static_cast<UPrimitiveComponent*>(GUObjectArray[i]);
+					float t = SelectedObject->CheckIntersection(ray);
+					if (t >= 0.0f && t < closestT)
+					{
+						closestT = t;
+						SelectedObjectIndex = SelectedObject->InternalIndex;
+					}
 				}
 			}
 		}
@@ -497,16 +505,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		renderer.RenderWorldAxis(view, projection, FVector4(0.f, 0.f, 1.f, 1.f), Up, 2.0f);
 		renderer.RenderWorldGrid(viewProjection, camera->RelativeLocation);
 
-		ImGui_ImplDX11_NewFrame();
-		ImGui_ImplWin32_NewFrame();
-		ImGui::NewFrame();
-		ImGuizmo::BeginFrame();
-
 		// ImGui
 		consoleWindow.Draw("Debug Console", nullptr);
 
 		ImGui::Begin("Outliner");
-		
+
 		UObject* TempObject;
 		UPrimitiveComponent* prim;
 		for (int i = 0; i < GUObjectArray.size(); i++)
@@ -528,7 +531,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		ImGui::End();
 
 		ImGui::Begin("Details Panel");
-		
+
 		if (SelectedObjectIndex != -1)
 		{
 			TempObject = GUObjectArray[SelectedObjectIndex];
@@ -540,7 +543,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				ImGui::DragFloat3("Scale", &SelectedObject->RelativeScale3D.x, 0.1f);
 			}
 		}
-		
+
 		ImGui::End();
 
 		// ImGuizmo
@@ -656,7 +659,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			{
 				USceneManager::LoadScene(resourceManager, SceneName);
 				SelectedObjectIndex = -1;
-			}			
+			}
 		}
 
 		ImGui::Separator();
