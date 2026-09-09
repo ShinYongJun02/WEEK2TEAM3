@@ -441,7 +441,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		if (pressed[6])
 		{
 			camera->RelativeRotation += FVector(0.0f, distY, distX) * cameraSpeed;
-			UE_LOG(debug, Info, "DeltaTime : .%f , Camera *  DeltaTime : .%f", deltaTime, deltaTime * cameraSpeed);
 		}
 
 		FMatrix view = camera->GetViewMatrix();
@@ -655,6 +654,43 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		ImGui::Separator();
 		ImGui::DragFloat3("Translation", &camera->RelativeLocation.x, 0.1f);
 		ImGui::DragFloat3("Rotation", &camera->RelativeRotation.x, 0.1f);
+
+		if (ImGui::Button("Location", ImVec2(100, 0)))
+		{
+			TrsMode = ImGuizmo::TRANSLATE;
+			CurrentGizmoOperation = EGizmoOperation::Translate;
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Rotation", ImVec2(100, 0)))
+		{
+			TrsMode = ImGuizmo::ROTATE;
+			CurrentGizmoOperation = EGizmoOperation::Rotate;
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Scale", ImVec2(100, 0)))
+		{
+			TrsMode = ImGuizmo::SCALE;
+			CurrentGizmoOperation = EGizmoOperation::Scale;
+		}
+
+		if (ImGui::Button("World", ImVec2(100, 0)))
+		{
+			WlMode = ImGuizmo::WORLD;
+			CurrentGizmoWorldMode = true;
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Local", ImVec2(100, 0)))
+		{
+			WlMode = ImGuizmo::LOCAL;
+			CurrentGizmoWorldMode = false;
+		}
+
 
 		if (camera->IsA<UPerspectiveCamera>())
 		{
