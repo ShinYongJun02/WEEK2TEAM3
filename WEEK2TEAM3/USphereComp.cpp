@@ -16,32 +16,32 @@ float USphereComp::CheckIntersection(const FRay& Ray) const
 	FVector4 LocalRayDirection = FVector4(Ray.Direction, 0.0f) * InvModelMatrix;
 
 	FRay LocalRay;
-	LocalRay.Origin = FVector(LocalRayOrigin.x, LocalRayOrigin.y, LocalRayOrigin.z);
-	LocalRay.Direction = FVector(LocalRayDirection.x, LocalRayDirection.y, LocalRayDirection.z);
+	LocalRay.Origin = FVector(LocalRayOrigin.X, LocalRayOrigin.Y, LocalRayOrigin.Z);
+	LocalRay.Direction = FVector(LocalRayDirection.X, LocalRayDirection.Y, LocalRayDirection.Z);
 
 	if (!(FRay::CheckAABB(LocalRay, StaticMesh.get()->MinVertex, StaticMesh.get()->MaxVertex)))
 	{
 		return -1.0f;
 	}
 
-	float closestT = -1.0f;
-	for (uint32 i = 0; i < StaticMesh->VertexCount; i += 3)
+	float ClosestT = -1.0f;
+	for (uint32 Index = 0; Index < StaticMesh->VertexCount; Index += 3)
 	{
 		FTriangle Triangle{
-			FVector(SphereVertices[i].x, SphereVertices[i].y, SphereVertices[i].z),
-			FVector(SphereVertices[i + 1].x, SphereVertices[i + 1].y, SphereVertices[i + 1].z),
-			FVector(SphereVertices[i + 2].x, SphereVertices[i + 2].y, SphereVertices[i + 2].z)
+			FVector(SphereVertices[Index].X, SphereVertices[Index].Y, SphereVertices[Index].Z),
+			FVector(SphereVertices[Index + 1].X, SphereVertices[Index + 1].Y, SphereVertices[Index + 1].Z),
+			FVector(SphereVertices[Index + 2].X, SphereVertices[Index + 2].Y, SphereVertices[Index + 2].Z)
 		};
 
-		float t = Raycast(LocalRay, Triangle);
-		if (t >= 0.0f)
+		float T = Raycast(LocalRay, Triangle);
+		if (T >= 0.0f)
 		{
-			if (closestT < 0.0f || t < closestT)
+			if (ClosestT < 0.0f || T < ClosestT)
 			{
-				closestT = t;
+				ClosestT = T;
 			}
 		}
 	}
 
-	return closestT;
+	return ClosestT;
 }

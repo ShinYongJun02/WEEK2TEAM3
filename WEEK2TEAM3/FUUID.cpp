@@ -10,12 +10,12 @@ FUUID::FUUID()
 	, C(0)
 	, D(0)
 {
-	std::uniform_int_distribution<uint32> distribution(0, UINT32_MAX);
+	std::uniform_int_distribution<uint32> Distribution(0, UINT32_MAX);
 
-	A = distribution(GGenerator);
-	B = distribution(GGenerator);
-	C = distribution(GGenerator);
-	D = distribution(GGenerator);
+	A = Distribution(GGenerator);
+	B = Distribution(GGenerator);
+	C = Distribution(GGenerator);
+	D = Distribution(GGenerator);
 }
 
 FString FUUID::ToString() const
@@ -25,13 +25,13 @@ FString FUUID::ToString() const
 
 FUUID FUUID::NewUUID()
 {
-	std::uniform_int_distribution<uint32> distribution(0, UINT32_MAX);
+	std::uniform_int_distribution<uint32> Distribution(0, UINT32_MAX);
 
 	FUUID ResultUUID;
-	ResultUUID.A = distribution(GGenerator);
-	ResultUUID.B = distribution(GGenerator);
-	ResultUUID.C = distribution(GGenerator);
-	ResultUUID.D = distribution(GGenerator);
+	ResultUUID.A = Distribution(GGenerator);
+	ResultUUID.B = Distribution(GGenerator);
+	ResultUUID.C = Distribution(GGenerator);
+	ResultUUID.D = Distribution(GGenerator);
 
 	return ResultUUID;
 }

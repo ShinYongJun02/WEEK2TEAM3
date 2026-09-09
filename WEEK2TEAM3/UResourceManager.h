@@ -2,7 +2,7 @@
 
 #include "UObject.h"
 
-class URenderer;
+class FRenderer;
 
 struct FStaticMesh
 {
@@ -15,7 +15,7 @@ struct FStaticMesh
 class UResourceManager : public UObject
 {
 public:
-	void Initialize(URenderer& renderer);
+	void Initialize(FRenderer& InRenderer);
 	void Release();
 
 	TSharedPtr<FStaticMesh> GetStaticMesh(const FString& NameKey);
@@ -24,7 +24,7 @@ private:
 	void BuiltInStaticMeshes();
 
 private:
-	URenderer* Renderer;
+	FRenderer* Renderer;
 
 	TMap<FString, TSharedPtr<FStaticMesh>> StaticMeshMap;
 };

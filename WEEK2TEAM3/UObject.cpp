@@ -23,12 +23,12 @@ UObject* UObject::CreateInstance()
 	return FObjectFactory::NewObject<UObject>();
 }
 
-const UClass* UObject::StaticClass() {
-	static UClass ClassInfo{ "UObject", nullptr, &UObject::CreateInstance };
+const FClass* UObject::StaticClass() {
+	static FClass ClassInfo{ "UObject", nullptr, &UObject::CreateInstance };
 	return &ClassInfo;
 }
 
-const UClass* UObject::GetClass() const {
+const FClass* UObject::GetClass() const {
 	return UObject::StaticClass();
 }
 

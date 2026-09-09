@@ -61,9 +61,9 @@ public:
 		std::ifstream In(Path);
 		if (!In.is_open()) return false;
 
-		std::ostringstream ss;
-		ss << In.rdbuf();
-		Src = ss.str();
+		std::ostringstream Stream;
+		Stream << In.rdbuf();
+		Src = Stream.str();
 		Pos = 0;
 
 		if (!ParseBlock(Out)) return false;

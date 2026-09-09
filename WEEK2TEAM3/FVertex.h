@@ -1,11 +1,11 @@
 #pragma once
-#include "UEngineStatics.h"
+#include "FEngineStatics.h"
 #include "Types.h"
 
 struct FVertex
 {
-	float x, y, z;    // Position
-	float r, g, b, a; // Color
+	float X, Y, Z;    // Position
+	float R, G, B, A; // Color
 };
 
 extern FVertex CubeVertices[];

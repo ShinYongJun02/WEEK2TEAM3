@@ -6,62 +6,62 @@ template <typename T>
 class TSparseArray
 {
 public:
-	int32 Add(const T& element)
+	int32 Add(const T& Element)
 	{
-		int32 index;
+		int32 Index;
 		if (!FreeIndices.empty())
 		{
-			index = FreeIndices.back();
+			Index = FreeIndices.back();
 			FreeIndices.pop_back();
-			Data[index] = element;
-			ValidFlags[index] = true;
+			Data[Index] = Element;
+			ValidFlags[Index] = true;
 		}
 		else
 		{
-			index = Data.size();
-			Data.push_back(element);
+			Index = Data.size();
+			Data.push_back(Element);
 			ValidFlags.push_back(true);
 		}
 
-		return index;
+		return Index;
 	}
 
-	int32 Add(T&& element)
+	int32 Add(T&& Element)
 	{
-		int32 index;
+		int32 Index;
 		if (!FreeIndices.empty())
 		{
-			index = FreeIndices.back();
+			Index = FreeIndices.back();
 			FreeIndices.pop_back();
-			Data[index] = std::move(element);
-			ValidFlags[index] = true;
+			Data[Index] = std::move(Element);
+			ValidFlags[Index] = true;
 		}
 		else
 		{
-			index = Data.size();
-			Data.push_back(std::move(element));
+			Index = Data.size();
+			Data.push_back(std::move(Element));
 			ValidFlags.push_back(true);
 		}
 
-		return index;
+		return Index;
 	}
 
-	void Remove(int32 index)
+	void Remove(int32 Index)
 	{
-		ASSERT(IsValid(index));
-		Data[index] = {};
-		ValidFlags[index] = false;
-		FreeIndices.Add(index);
+		ASSERT(IsValid(Index));
+		Data[Index] = {};
+		ValidFlags[Index] = false;
+		FreeIndices.Add(Index);
 	}
 
-	bool IsValid(int32 index) const
+	bool IsValid(int32 Index) const
 	{
-		if (index < 0 || index >= ValidFlags.size())
+		if (Index < 0 || Index >= ValidFlags.size())
 		{
 			return false;
 		}
 
-		return ValidFlags[index];
+		return ValidFlags[Index];
 	}
 
 	uint32 Size() const

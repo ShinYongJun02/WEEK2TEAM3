@@ -15,33 +15,33 @@ float UPlaneComp::CheckIntersection(const FRay& Ray) const
 	FVector4 LocalRayDirection = FVector4(Ray.Direction, 0.0f) * InvModelMatrix;
 
 	FRay LocalRay;
-	LocalRay.Origin = FVector(LocalRayOrigin.x, LocalRayOrigin.y, LocalRayOrigin.z);
-	LocalRay.Direction = FVector(LocalRayDirection.x, LocalRayDirection.y, LocalRayDirection.z);
+	LocalRay.Origin = FVector(LocalRayOrigin.X, LocalRayOrigin.Y, LocalRayOrigin.Z);
+	LocalRay.Direction = FVector(LocalRayDirection.X, LocalRayDirection.Y, LocalRayDirection.Z);
 
 	if (!(FRay::CheckAABB(LocalRay, StaticMesh.get()->MinVertex, StaticMesh.get()->MaxVertex)))
 	{
 		return -1.0f;
 	}
 
-	float closestT = -1.0f;
-	for (uint32 i = 0; i < StaticMesh->VertexCount; i += 3)
+	float ClosestT = -1.0f;
+	for (uint32 Index = 0; Index < StaticMesh->VertexCount; Index += 3)
 	{
 		FTriangle Triangle{
-			FVector(PlaneVertices[i].x, PlaneVertices[i].y, PlaneVertices[i].z),
-			FVector(PlaneVertices[i + 1].x, PlaneVertices[i + 1].y, PlaneVertices[i + 1].z),
-			FVector(PlaneVertices[i + 2].x, PlaneVertices[i + 2].y, PlaneVertices[i + 2].z)
+			FVector(PlaneVertices[Index].X, PlaneVertices[Index].Y, PlaneVertices[Index].Z),
+			FVector(PlaneVertices[Index + 1].X, PlaneVertices[Index + 1].Y, PlaneVertices[Index + 1].Z),
+			FVector(PlaneVertices[Index + 2].X, PlaneVertices[Index + 2].Y, PlaneVertices[Index + 2].Z)
 		};
 
-		float t = Raycast(LocalRay, Triangle);
-		if (t >= 0.0f)
+		float T = Raycast(LocalRay, Triangle);
+		if (T >= 0.0f)
 		{
-			if (closestT < 0.0f || t < closestT)
+			if (ClosestT < 0.0f || T < ClosestT)
 			{
-				closestT = t;
+				ClosestT = T;
 			}
 		}
 	}
 
-	return closestT;
+	return ClosestT;
 }
 

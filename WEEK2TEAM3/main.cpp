@@ -1,79 +1,79 @@
 #include "Core.h"
 #include "FVertex.h"
-#include "URenderer.h"
+#include "FRenderer.h"
 #include "UCamera.h"
 #include "UResourceManager.h"
-#include "UInputContext.h"
+#include "FInputContext.h"
 #include "UCubeComp.h"
 #include "USphereComp.h"
 #include "UPlaneComp.h"
-#include "USceneManager.h"
-#include "UObjectAllocator.h"
+#include "FSceneManager.h"
+#include "FUObjectAllocator.h"
 #include "FConsoleWindow.h"
-#include "UGizmo.h"
+#include "FGizmo.h"
 #include "FLogger.h"
 #include "Helper.h"
 
 // 화면 경계
-const float leftBorder = -1.0f;
-const float rightBorder = 1.0f;
-const float topBorder = 1.0f;
-const float bottomBorder = -1.0f;
+const float LeftBorder = -1.0f;
+const float RightBorder = 1.0f;
+const float TopBorder = 1.0f;
+const float BottomBorder = -1.0f;
 
-class TWindowEventHandler {
+class FWindowEventHandler {
 public:
-	TWindowEventHandler(URenderer& renderer, UInputContext& inputContext)
-		: Renderer(renderer)
-		, InputContext(inputContext)
+	FWindowEventHandler(FRenderer& InRenderer, FInputContext& InInputContext)
+		: Renderer(InRenderer)
+		, InputContext(InInputContext)
 	{
 	}
 
-	inline void HandleResize(UINT width, UINT height)
+	inline void HandleResize(UINT Width, UINT Height)
 	{
-		Renderer.Resize(width, height);
+		Renderer.Resize(Width, Height);
 	}
 
-	inline void HandleKeyDown(uint64 keyCode)
+	inline void HandleKeyDown(uint64 KeyCode)
 	{
-		InputContext.HandleKeyDown(keyCode);
+		InputContext.HandleKeyDown(KeyCode);
 	}
 
-	inline void HandleKeyUp(uint64 keyCode)
+	inline void HandleKeyUp(uint64 KeyCode)
 	{
-		InputContext.HandleKeyUp(keyCode);
+		InputContext.HandleKeyUp(KeyCode);
 	}
 
-	inline void HandleMouseButtonDown(uint8 buttonIndex)
+	inline void HandleMouseButtonDown(uint8 ButtonIndex)
 	{
-		InputContext.HandleMouseButtonDown(buttonIndex);
+		InputContext.HandleMouseButtonDown(ButtonIndex);
 	}
 
-	inline void HandleMouseButtonUp(uint8 buttonIndex)
+	inline void HandleMouseButtonUp(uint8 ButtonIndex)
 	{
-		InputContext.HandleMouseButtonUp(buttonIndex);
+		InputContext.HandleMouseButtonUp(ButtonIndex);
 	}
 
-	inline void HandleMouseMove(int32 x, int32 y)
+	inline void HandleMouseMove(int32 X, int32 Y)
 	{
-		InputContext.HandleMouseMove(x, y);
+		InputContext.HandleMouseMove(X, Y);
 	}
 
 private:
-	URenderer& Renderer;
-	UInputContext& InputContext;
+	FRenderer& Renderer;
+	FInputContext& InputContext;
 };
 
 void CreateDebugConsole() {
 	// 1. Allocate a new console for the calling process
 	if (AllocConsole()) {
-		FILE* fp;
+		FILE* Fp;
 
 		// 2. Redirect standard output (stdout) to the console
-		freopen_s(&fp, "CONOUT$", "w", stdout);
+		freopen_s(&Fp, "CONOUT$", "w", stdout);
 		// 3. Redirect standard error (stderr) to the console
-		freopen_s(&fp, "CONOUT$", "w", stderr);
+		freopen_s(&Fp, "CONOUT$", "w", stderr);
 		// 4. Redirect standard input (stdin) to the console
-		freopen_s(&fp, "CONIN$", "r", stdin);
+		freopen_s(&Fp, "CONIN$", "r", stdin);
 
 		// 5. Clear the error state for each of the C++ standard streams
 		std::clog.clear();
@@ -86,31 +86,31 @@ void CreateDebugConsole() {
 	}
 }
 
-UPrimitiveComponent* SpawnPrimitiveByType(int typeIndex, UResourceManager& ResourceManager)
+UPrimitiveComponent* SpawnPrimitiveByType(int TypeIndex, UResourceManager& ResourceManager)
 {
 	UPrimitiveComponent* NewPrimitive = nullptr;
 
-	switch (typeIndex)
+	switch (TypeIndex)
 	{
 	case 0:
 	{
-		UCubeComp* cube = (UCubeComp*)FObjectFactory::ConstructObject(UCubeComp::StaticClass());
-		cube->Initialize(ResourceManager);
-		NewPrimitive = cube;
+		UCubeComp* Cube = (UCubeComp*)FObjectFactory::ConstructObject(UCubeComp::StaticClass());
+		Cube->Initialize(ResourceManager);
+		NewPrimitive = Cube;
 	}
 	break;
 	case 1:
 	{
-		USphereComp* sphere = (USphereComp*)FObjectFactory::ConstructObject(USphereComp::StaticClass());
-		sphere->Initialize(ResourceManager);
-		NewPrimitive = sphere;
+		USphereComp* Sphere = (USphereComp*)FObjectFactory::ConstructObject(USphereComp::StaticClass());
+		Sphere->Initialize(ResourceManager);
+		NewPrimitive = Sphere;
 	}
 	break;
 	case 2:
 	{
-		UPlaneComp* plane = (UPlaneComp*)FObjectFactory::ConstructObject(UPlaneComp::StaticClass());
-		plane->Initialize(ResourceManager);
-		NewPrimitive = plane;
+		UPlaneComp* Plane = (UPlaneComp*)FObjectFactory::ConstructObject(UPlaneComp::StaticClass());
+		Plane->Initialize(ResourceManager);
+		NewPrimitive = Plane;
 	}
 	break;
 	}
@@ -118,83 +118,83 @@ UPrimitiveComponent* SpawnPrimitiveByType(int typeIndex, UResourceManager& Resou
 	return NewPrimitive;
 }
 
-extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LParam);
 
-LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK WndProc(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LParam)
 {
-	TWindowEventHandler* eventHandler = reinterpret_cast<TWindowEventHandler*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
+	FWindowEventHandler* EventHandler = reinterpret_cast<FWindowEventHandler*>(GetWindowLongPtrW(WindowHandle, GWLP_USERDATA));
 
 	// ImGui 메시지 처리
-	if (ImGui_ImplWin32_WndProcHandler(hWnd, message, wParam, lParam))
+	if (ImGui_ImplWin32_WndProcHandler(WindowHandle, Message, WParam, LParam))
 	{
 		return true;
 	}
 
-	switch (message)
+	switch (Message)
 	{
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
 	case WM_SIZE:
-		if (eventHandler)
+		if (EventHandler)
 		{
-			UINT width = LOWORD(lParam);
-			UINT height = HIWORD(lParam);
-			eventHandler->HandleResize(width, height);
+			UINT Width = LOWORD(LParam);
+			UINT Height = HIWORD(LParam);
+			EventHandler->HandleResize(Width, Height);
 		}
 		break;
 	case WM_KEYDOWN:
-		if (eventHandler)
+		if (EventHandler)
 		{
-			eventHandler->HandleKeyDown(wParam);
+			EventHandler->HandleKeyDown(WParam);
 		}
 		break;
 	case WM_KEYUP:
-		if (eventHandler)
+		if (EventHandler)
 		{
-			eventHandler->HandleKeyUp(wParam);
+			EventHandler->HandleKeyUp(WParam);
 		}
 		break;
 	case WM_LBUTTONDOWN:
-		if (eventHandler)
+		if (EventHandler)
 		{
-			eventHandler->HandleMouseButtonDown(0);
+			EventHandler->HandleMouseButtonDown(0);
 		}
 		break;
 	case WM_LBUTTONUP:
-		if (eventHandler)
+		if (EventHandler)
 		{
-			eventHandler->HandleMouseButtonUp(0);
+			EventHandler->HandleMouseButtonUp(0);
 		}
 		break;
 	case WM_RBUTTONDOWN:
-		if (eventHandler)
+		if (EventHandler)
 		{
-			eventHandler->HandleMouseButtonDown(1);
+			EventHandler->HandleMouseButtonDown(1);
 		}
 		break;
 	case WM_RBUTTONUP:
-		if (eventHandler)
+		if (EventHandler)
 		{
-			eventHandler->HandleMouseButtonUp(1);
+			EventHandler->HandleMouseButtonUp(1);
 		}
 		break;
 	case WM_MOUSEMOVE:
-		if (eventHandler)
+		if (EventHandler)
 		{
-			int32 x = GET_X_LPARAM(lParam);
-			int32 y = GET_Y_LPARAM(lParam);
-			eventHandler->HandleMouseMove(x, y);
+			int32 X = GET_X_LPARAM(LParam);
+			int32 Y = GET_Y_LPARAM(LParam);
+			EventHandler->HandleMouseMove(X, Y);
 		}
 		break;
 	default:
-		return DefWindowProc(hWnd, message, wParam, lParam);
+		return DefWindowProc(WindowHandle, Message, WParam, LParam);
 	}
 
 	return 0;
 }
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
+int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int ShowCmd)
 {
 #if _DEBUG
 	CreateDebugConsole();
@@ -203,63 +203,63 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	WCHAR WindowClass[] = L"JungleWindowClass";
 	WCHAR Title[] = L"Game Tech Lab";
 
-	WNDCLASSW wndclass = { 0, WndProc, 0, 0, 0, 0, 0, 0, 0, WindowClass };
-	RegisterClassW(&wndclass);
+	WNDCLASSW WndClass = { 0, WndProc, 0, 0, 0, 0, 0, 0, 0, WindowClass };
+	RegisterClassW(&WndClass);
 
-	HWND hWnd = CreateWindowExW(0, WindowClass, Title,
+	HWND WindowHandle = CreateWindowExW(0, WindowClass, Title,
 		WS_POPUP | WS_VISIBLE | WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT, CW_USEDEFAULT, 1920, 1080, nullptr, nullptr, hInstance, nullptr);
+		CW_USEDEFAULT, CW_USEDEFAULT, 1920, 1080, nullptr, nullptr, Instance, nullptr);
 
 	// 렌더러 초기화
-	URenderer renderer;
-	renderer.Create(hWnd);
+	FRenderer Renderer;
+	Renderer.Create(WindowHandle);
 
 	FUObjectAllocator::Initialize(1024 * 1024 * 100); // 100MB
 
-	UResourceManager resourceManager;
-	resourceManager.Initialize(renderer);
+	UResourceManager ResourceManager;
+	ResourceManager.Initialize(Renderer);
 
-	UInputContext inputContext;
+	FInputContext InputContext;
 
-	TWindowEventHandler windowEventHandler(renderer, inputContext);
+	FWindowEventHandler WindowEventHandler(Renderer, InputContext);
 
-	SetWindowLongPtrW(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(&windowEventHandler));
+	SetWindowLongPtrW(WindowHandle, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(&WindowEventHandler));
 
 	// ImGui 초기화
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
-	ImGui_ImplWin32_Init((void*)hWnd);
-	ImGui_ImplDX11_Init(renderer.Device, renderer.DeviceContext);
+	ImGuiIO& Io = ImGui::GetIO();
+	ImGui_ImplWin32_Init((void*)WindowHandle);
+	ImGui_ImplDX11_Init(Renderer.Device, Renderer.DeviceContext);
 
 	// FPS 관리
-	const int targetFPS = 144;
-	const double targetFrameTime = 1000.0 / targetFPS;
-	LARGE_INTEGER frequency;
-	LARGE_INTEGER currentTime, lastTime;
-	QueryPerformanceFrequency(&frequency);
-	QueryPerformanceCounter(&currentTime);
-	lastTime = currentTime;
-	double elapsedTime = 0.0;
-	double deltaTime = 0.0f;
+	const int TargetFPS = 144;
+	const double TargetFrameTime = 1000.0 / TargetFPS;
+	LARGE_INTEGER Frequency;
+	LARGE_INTEGER CurrentTime, LastTime;
+	QueryPerformanceFrequency(&Frequency);
+	QueryPerformanceCounter(&CurrentTime);
+	LastTime = CurrentTime;
+	double ElapsedTime = 0.0;
+	double DeltaTime = 0.0f;
 
 	// 카메라
-	UPerspectiveCamera perspectiveCamera;
-	perspectiveCamera.RelativeLocation = FVector(-5.0f, 0, 5.0f);
-	perspectiveCamera.RelativeRotation = FVector(0, -45.0f, 0);
+	UPerspectiveCamera PerspectiveCamera;
+	PerspectiveCamera.RelativeLocation = FVector(-5.0f, 0, 5.0f);
+	PerspectiveCamera.RelativeRotation = FVector(0, -45.0f, 0);
 
-	UOrthoCamera orthoCamera;
-	orthoCamera.RelativeLocation += FVector(-5.0f);
+	UOrthoCamera OrthoCamera;
+	OrthoCamera.RelativeLocation += FVector(-5.0f);
 
-	double cameraSpeed = 0.25f;
+	double CameraSpeed = 0.25f;
 
 	// 마우스 추적
-	POINT pt;
-	GetCursorPos(&pt);          // 화면 좌표
-	ScreenToClient(hWnd, &pt);  // 클라이언트 좌표로 변환
+	POINT Pt;
+	GetCursorPos(&Pt);          // 화면 좌표
+	ScreenToClient(WindowHandle, &Pt);  // 클라이언트 좌표로 변환
 
-	int32 lastMouseX = inputContext.GetMouseX();
-	int32 lastMouseY = inputContext.GetMouseY();
+	int32 LastMouseX = InputContext.GetMouseX();
+	int32 LastMouseY = InputContext.GetMouseY();
 
 	//outliner
 	int32 SelectedObjectIndex = -1;
@@ -272,7 +272,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// 종료 시그널
 	bool bIsExit = false;
 
-	bool usePerspectiveCamera = true;
+	bool UsePerspectiveCamera = true;
 
 	struct FOutlineConstant
 	{
@@ -282,20 +282,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		float Padding[3];
 	};
 
-	TSharedPtr<URenderPipeline> outlinePipeline = renderer.CreateRenderPipeline();
-	outlinePipeline->SetRasterRizerState(D3D11_CULL_FRONT);
-	outlinePipeline->SetDepthStencilState(true, true);
-	outlinePipeline->SetShader("Assets/Shaders/Outline.hlsl");
-	outlinePipeline->AddConstantBuffer<FOutlineConstant>();
+	TSharedPtr<FRenderPipeline> OutlinePipeline = Renderer.CreateRenderPipeline();
+	OutlinePipeline->SetRasterRizerState(D3D11_CULL_FRONT);
+	OutlinePipeline->SetDepthStencilState(true, true);
+	OutlinePipeline->SetShader("Assets/Shaders/Outline.hlsl");
+	OutlinePipeline->AddConstantBuffer<FOutlineConstant>();
 
-	TSharedPtr<URenderPipeline> planeOutlinePipeline = renderer.CreateRenderPipeline();
-	planeOutlinePipeline->SetRasterRizerState(D3D11_CULL_BACK, 1);
-	planeOutlinePipeline->SetDepthStencilState(true, true);
-	planeOutlinePipeline->SetShader("Assets/Shaders/Outline.hlsl");
-	planeOutlinePipeline->AddConstantBuffer<FOutlineConstant>();
+	TSharedPtr<FRenderPipeline> PlaneOutlinePipeline = Renderer.CreateRenderPipeline();
+	PlaneOutlinePipeline->SetRasterRizerState(D3D11_CULL_BACK, 1);
+	PlaneOutlinePipeline->SetDepthStencilState(true, true);
+	PlaneOutlinePipeline->SetShader("Assets/Shaders/Outline.hlsl");
+	PlaneOutlinePipeline->AddConstantBuffer<FOutlineConstant>();
 
-	FConsoleWindow consoleWindow;
-	UGizmo gizmo(renderer, inputContext);
+	FConsoleWindow ConsoleWindow;
+	FGizmo Gizmo(Renderer, InputContext);
 
 	bool CurrentGizmoWorldMode = true;
 	EGizmoOperation CurrentGizmoOperation = EGizmoOperation::Translate;
@@ -307,25 +307,25 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	while (bIsExit == false)
 	{
-		QueryPerformanceCounter(&currentTime);
-		deltaTime = (double)(currentTime.QuadPart - lastTime.QuadPart) / (double)(frequency.QuadPart);
-		lastTime = currentTime;
+		QueryPerformanceCounter(&CurrentTime);
+		DeltaTime = (double)(CurrentTime.QuadPart - LastTime.QuadPart) / (double)(Frequency.QuadPart);
+		LastTime = CurrentTime;
 
-		MSG msg;
+		MSG Msg;
 
-		while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+		while (PeekMessage(&Msg, nullptr, 0, 0, PM_REMOVE))
 		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
+			TranslateMessage(&Msg);
+			DispatchMessage(&Msg);
 
-			if (msg.message == WM_QUIT)
+			if (Msg.message == WM_QUIT)
 			{
 				bIsExit = true;
 				break;
 			}
 		}
 
-		if (inputContext.IsKeyDown(VK_SPACE))
+		if (InputContext.IsKeyDown(VK_SPACE))
 		{
 			if (CurrentGizmoOperation == EGizmoOperation::Translate)
 			{
@@ -340,119 +340,119 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				CurrentGizmoOperation = EGizmoOperation::Translate;
 			}
 		}
-		else if (inputContext.IsKeyDown('V'))
+		else if (InputContext.IsKeyDown('V'))
 		{
 			CurrentGizmoWorldMode = true;
 		}
-		else if (inputContext.IsKeyDown('B'))
+		else if (InputContext.IsKeyDown('B'))
 		{
 			CurrentGizmoWorldMode = false;
 		}
 
 		// 마우스 추적
-		int32 mouseX = inputContext.GetMouseX();
-		int32 mouseY = inputContext.GetMouseY();
-		float distX = mouseX - lastMouseX;
-		float distY = lastMouseY - mouseY;
-		lastMouseX = mouseX;
-		lastMouseY = mouseY;
+		int32 MouseX = InputContext.GetMouseX();
+		int32 MouseY = InputContext.GetMouseY();
+		float DistX = MouseX - LastMouseX;
+		float DistY = LastMouseY - MouseY;
+		LastMouseX = MouseX;
+		LastMouseY = MouseY;
 
-		UCamera* camera;
-		if (usePerspectiveCamera)
+		UCamera* Camera;
+		if (UsePerspectiveCamera)
 		{
-			camera = &perspectiveCamera;
+			Camera = &PerspectiveCamera;
 		}
 		else
 		{
-			camera = &orthoCamera;
+			Camera = &OrthoCamera;
 		}
 
-		float aspect = (float)renderer.GetWidth() / (float)renderer.GetHeight();
+		float Aspect = (float)Renderer.GetWidth() / (float)Renderer.GetHeight();
 
-		camera->aspect = aspect;
+		Camera->Aspect = Aspect;
 
 		// 카메라 무빙 (카메라 z축 회전 = 오른쪽 보기, 카메라 y축 회전 = 아래 보기
 		if (!ImGui::GetIO().WantCaptureKeyboard)
 		{
-			FVector axis(0.f, 0.f, 0.f);
-			if (inputContext.IsKeyPressed('W'))
+			FVector Axis(0.f, 0.f, 0.f);
+			if (InputContext.IsKeyPressed('W'))
 			{
-				axis.x = 1.f;
+				Axis.X = 1.f;
 			}
-			else if (inputContext.IsKeyPressed('S'))
+			else if (InputContext.IsKeyPressed('S'))
 			{
-				axis.x = -1.f;
-			}
-
-			if (inputContext.IsKeyPressed('D'))
-			{
-				axis.y = 1.f;
-			}
-			else if (inputContext.IsKeyPressed('A'))
-			{
-				axis.y = -1.f;
+				Axis.X = -1.f;
 			}
 
-			if (inputContext.IsKeyPressed('E'))
+			if (InputContext.IsKeyPressed('D'))
 			{
-				axis.z = 1.f;
+				Axis.Y = 1.f;
 			}
-			else if (inputContext.IsKeyPressed('Q'))
+			else if (InputContext.IsKeyPressed('A'))
 			{
-				axis.z = -1.f;
+				Axis.Y = -1.f;
 			}
 
-			if (axis.LengthSquared())
+			if (InputContext.IsKeyPressed('E'))
 			{
-				axis.Normalize();
-				camera->RelativeLocation += (camera->GetForward() * axis.x + camera->GetRight() * axis.y + camera->GetUp() * axis.z) * deltaTime;
+				Axis.Z = 1.f;
+			}
+			else if (InputContext.IsKeyPressed('Q'))
+			{
+				Axis.Z = -1.f;
+			}
+
+			if (Axis.LengthSquared())
+			{
+				Axis.Normalize();
+				Camera->RelativeLocation += (Camera->GetForward() * Axis.X + Camera->GetRight() * Axis.Y + Camera->GetUp() * Axis.Z) * DeltaTime;
 			}
 		}
 
-		if (inputContext.IsMouseButtonPressed(1))
+		if (InputContext.IsMouseButtonPressed(1))
 		{
-			camera->RelativeRotation += FVector(0.0f, distY, distX) * cameraSpeed;
+			Camera->RelativeRotation += FVector(0.0f, DistY, DistX) * CameraSpeed;
 		}
 
-		FMatrix view = camera->GetViewMatrix();
-		FMatrix projection = camera->GetProjectionMatrix();
-		FMatrix viewProjection = view * projection;
-		FMatrix invViewProjection = viewProjection.GetInverse();
+		FMatrix View = Camera->GetViewMatrix();
+		FMatrix Projection = Camera->GetProjectionMatrix();
+		FMatrix ViewProjection = View * Projection;
+		FMatrix InvViewProjection = ViewProjection.GetInverse();
 
-		float mappedX = Remap(mouseX, 0, renderer.GetWidth(), -1.f, 1.f);
-		float mappedY = -Remap(mouseY, 0, renderer.GetHeight(), -1.f, 1.f);
+		float MappedX = Remap(MouseX, 0, Renderer.GetWidth(), -1.f, 1.f);
+		float MappedY = -Remap(MouseY, 0, Renderer.GetHeight(), -1.f, 1.f);
 
-		FVector4 ndcPos(mappedX, mappedY, 1.0f, 1.0f);
-		FVector4 worldPos = ndcPos * invViewProjection;
-		worldPos /= worldPos.w;
+		FVector4 NdcPos(MappedX, MappedY, 1.0f, 1.0f);
+		FVector4 WorldPos = NdcPos * InvViewProjection;
+		WorldPos /= WorldPos.W;
 
 		ImGui_ImplDX11_NewFrame();
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
 		ImGuizmo::BeginFrame();
 
-		if (inputContext.IsMouseButtonDown(0)) {
+		if (InputContext.IsMouseButtonDown(0)) {
 			if (!ImGui::GetIO().WantCaptureMouse)
 			{
 				SelectedObjectIndex = -1;
-				FRay ray;
-				ray.Origin = camera->RelativeLocation;
-				ray.Direction = FVector(worldPos.x, worldPos.y, worldPos.z) - camera->RelativeLocation;
-				ray.Direction.Normalize();
+				FRay Ray;
+				Ray.Origin = Camera->RelativeLocation;
+				Ray.Direction = FVector(WorldPos.X, WorldPos.Y, WorldPos.Z) - Camera->RelativeLocation;
+				Ray.Direction.Normalize();
 
-				float closestT = FLT_MAX;
-				for (int i = 0; i < GUObjectArray.size(); i++)
+				float ClosestT = FLT_MAX;
+				for (int Index = 0; Index < GUObjectArray.size(); Index++)
 				{
-					if (!GUObjectArray[i]->IsA<UPrimitiveComponent>())
+					if (!GUObjectArray[Index]->IsA<UPrimitiveComponent>())
 					{
 						continue;
 					}
 
-					UPrimitiveComponent* SelectedObject = static_cast<UPrimitiveComponent*>(GUObjectArray[i]);
-					float t = SelectedObject->CheckIntersection(ray);
-					if (t >= 0.0f && t < closestT)
+					UPrimitiveComponent* SelectedObject = static_cast<UPrimitiveComponent*>(GUObjectArray[Index]);
+					float T = SelectedObject->CheckIntersection(Ray);
+					if (T >= 0.0f && T < ClosestT)
 					{
-						closestT = t;
+						ClosestT = T;
 						SelectedObjectIndex = SelectedObject->InternalIndex;
 					}
 				}
@@ -460,55 +460,55 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		}
 
 		// Transform
-		renderer.Prepare();
-		renderer.UpdateViewConstant(viewProjection);
+		Renderer.Prepare();
+		Renderer.UpdateViewConstant(ViewProjection);
 
-		for (int32 i = 0; i < GUObjectArray.size(); i++)
+		for (int32 Index = 0; Index < GUObjectArray.size(); Index++)
 		{
-			UObject* obj = GUObjectArray[i];
+			UObject* Obj = GUObjectArray[Index];
 
-			if (obj->IsA<UPrimitiveComponent>())
+			if (Obj->IsA<UPrimitiveComponent>())
 			{
-				UPrimitiveComponent* prim = static_cast<UPrimitiveComponent*>(obj);
-				if (i == SelectedObjectIndex)
+				UPrimitiveComponent* Prim = static_cast<UPrimitiveComponent*>(Obj);
+				if (Index == SelectedObjectIndex)
 				{
-					TSharedPtr<URenderPipeline> pipeline = outlinePipeline;
-					if (prim->IsA<UPlaneComp>())
+					TSharedPtr<FRenderPipeline> Pipeline = OutlinePipeline;
+					if (Prim->IsA<UPlaneComp>())
 					{
-						planeOutlinePipeline->UpdateConstantBuffer(0, FOutlineConstant{ prim->GetModelMatrix(), viewProjection, FVector(1.f, 1.f, 1.f), 0.03f });
-						pipeline = planeOutlinePipeline;
+						PlaneOutlinePipeline->UpdateConstantBuffer(0, FOutlineConstant{ Prim->GetModelMatrix(), ViewProjection, FVector(1.f, 1.f, 1.f), 0.03f });
+						Pipeline = PlaneOutlinePipeline;
 					}
-					pipeline->UpdateConstantBuffer(0, FOutlineConstant{ prim->GetModelMatrix(), viewProjection, FVector(1.f, 1.f, 1.f), 0.03f });
-					renderer.RenderPrimitive(pipeline, prim->GetStaticMesh()->VertexBuffer, prim->GetStaticMesh()->VertexCount);
+					Pipeline->UpdateConstantBuffer(0, FOutlineConstant{ Prim->GetModelMatrix(), ViewProjection, FVector(1.f, 1.f, 1.f), 0.03f });
+					Renderer.RenderPrimitive(Pipeline, Prim->GetStaticMesh()->VertexBuffer, Prim->GetStaticMesh()->VertexCount);
 				}
-				prim->Render(renderer);
+				Prim->Render(Renderer);
 			}
 		}
 
-		renderer.RenderWorldAxis(view, projection, FVector4(0.f, 0.f, 1.f, 1.f), Up, 2.0f);
-		renderer.RenderWorldGrid(viewProjection, camera->RelativeLocation);
+		Renderer.RenderWorldAxis(View, Projection, FVector4(0.f, 0.f, 1.f, 1.f), Up, 2.0f);
+		Renderer.RenderWorldGrid(ViewProjection, Camera->RelativeLocation);
 
 		// ImGui
-		consoleWindow.Draw("Debug Console", nullptr);
+		ConsoleWindow.Draw("Debug Console", nullptr);
 
 		ImGui::Begin("Outliner");
 		
-		for (int32 i = 0; i < GUObjectArray.size(); i++)
+		for (int32 Index = 0; Index < GUObjectArray.size(); Index++)
 		{
-			if (!GUObjectArray[i]->IsA<UPrimitiveComponent>())
+			if (!GUObjectArray[Index]->IsA<UPrimitiveComponent>())
 			{
 				continue;
 			}
 
-			UPrimitiveComponent* prim = static_cast<UPrimitiveComponent*>(GUObjectArray[i]);
+			UPrimitiveComponent* Prim = static_cast<UPrimitiveComponent*>(GUObjectArray[Index]);
 
-			char label[64];
-			sprintf_s(label, "%s : %s", prim->GetName().c_str(), prim->UUID.ToString().c_str());
+			char Label[64];
+			sprintf_s(Label, "%s : %s", Prim->GetName().c_str(), Prim->UUID.ToString().c_str());
 
-			bool isSelected = (SelectedObjectIndex == prim->InternalIndex);
-			if (ImGui::Selectable(label, isSelected))
+			bool bIsSelected = (SelectedObjectIndex == Prim->InternalIndex);
+			if (ImGui::Selectable(Label, bIsSelected))
 			{
-				SelectedObjectIndex = prim->InternalIndex;
+				SelectedObjectIndex = Prim->InternalIndex;
 			}
 		}
 		ImGui::End();
@@ -518,9 +518,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		if (SelectedObjectIndex != -1 && GUObjectArray[SelectedObjectIndex]->IsA<USceneComponent>())
 		{
 			USceneComponent* SelectedObject = static_cast<USceneComponent*>(GUObjectArray[SelectedObjectIndex]);
-			ImGui::DragFloat3("Translation", &SelectedObject->RelativeLocation.x, 0.1f);
-			ImGui::DragFloat3("Rotation", &SelectedObject->RelativeRotation.x, 0.1f);
-			ImGui::DragFloat3("Scale", &SelectedObject->RelativeScale3D.x, 0.1f);
+			ImGui::DragFloat3("Translation", &SelectedObject->RelativeLocation.X, 0.1f);
+			ImGui::DragFloat3("Rotation", &SelectedObject->RelativeRotation.X, 0.1f);
+			ImGui::DragFloat3("Scale", &SelectedObject->RelativeScale3D.X, 0.1f);
 		}
 
 		ImGui::End();
@@ -534,44 +534,44 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 			if (SelectedObject)
 			{
-				FMatrix model = SelectedObject->GetModelMatrix();
+				FMatrix Model = SelectedObject->GetModelMatrix();
 
 				ImGuizmo::SetOrthographic(false);
-				ImGuizmo::SetRect(0.0f, 0.0f, renderer.GetWidth(), renderer.GetHeight());
-				ImGuizmo::Manipulate(view.M[0], projection.M[0], TrsMode, WlMode, model.M[0], NULL, NULL);
+				ImGuizmo::SetRect(0.0f, 0.0f, Renderer.GetWidth(), Renderer.GetHeight());
+				ImGuizmo::Manipulate(View.M[0], Projection.M[0], TrsMode, WlMode, Model.M[0], NULL, NULL);
 
 				if (ImGuizmo::IsUsing())
 				{
-					float translation[3];
-					float rotation[3];
-					float scale[3];
+					float Translation[3];
+					float Rotation[3];
+					float Scale[3];
 
-					ImGuizmo::DecomposeMatrixToComponents(model.M[0], translation, rotation, scale);
+					ImGuizmo::DecomposeMatrixToComponents(Model.M[0], Translation, Rotation, Scale);
 
-					SelectedObject->RelativeLocation = FVector(translation[0], translation[1], translation[2]);
-					SelectedObject->RelativeRotation = FVector(-rotation[0], -rotation[1], rotation[2]);
-					SelectedObject->RelativeScale3D = FVector(scale[0], scale[1], scale[2]);
+					SelectedObject->RelativeLocation = FVector(Translation[0], Translation[1], Translation[2]);
+					SelectedObject->RelativeRotation = FVector(-Rotation[0], -Rotation[1], Rotation[2]);
+					SelectedObject->RelativeScale3D = FVector(Scale[0], Scale[1], Scale[2]);
 				}
 			}
 #else
-			gizmo.SetOperation(CurrentGizmoOperation);
-			gizmo.SetWorldMode(CurrentGizmoWorldMode);
-			gizmo.Draw(*SelectedObject, camera->RelativeLocation, viewProjection);
+			Gizmo.SetOperation(CurrentGizmoOperation);
+			Gizmo.SetWorldMode(CurrentGizmoWorldMode);
+			Gizmo.Draw(*SelectedObject, Camera->RelativeLocation, ViewProjection);
 #endif
 		}
 
 		ImGui::Begin("Place Actors");
-		ImGui::Text("FPS %.0f (%.4f ms)", 1.0f / deltaTime, deltaTime);
+		ImGui::Text("FPS %.0f (%.4f ms)", 1.0f / DeltaTime, DeltaTime);
 		ImGui::Separator();
 
 		if (ImGui::BeginCombo("Primitive", PrimitiveTypeNames[SelectedPrimitiveIndex]))
 		{
-			for (int i = 0; i < std::size(PrimitiveTypeNames); i++)
+			for (int Index = 0; Index < std::size(PrimitiveTypeNames); Index++)
 			{
-				bool bIsSelected = (SelectedPrimitiveIndex == i);
-				if (ImGui::Selectable(PrimitiveTypeNames[i], bIsSelected))
+				bool bIsSelected = (SelectedPrimitiveIndex == Index);
+				if (ImGui::Selectable(PrimitiveTypeNames[Index], bIsSelected))
 				{
-					SelectedPrimitiveIndex = i;
+					SelectedPrimitiveIndex = Index;
 				}
 				if (bIsSelected)
 				{
@@ -583,9 +583,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 		if (ImGui::Button("Spawn", ImVec2(80, 0)))
 		{
-			for (int i = 0; i < SpawnCount; i++)
+			for (int Index = 0; Index < SpawnCount; Index++)
 			{
-				SpawnPrimitiveByType(SelectedPrimitiveIndex, resourceManager);
+				SpawnPrimitiveByType(SelectedPrimitiveIndex, ResourceManager);
 			}
 		}
 
@@ -604,28 +604,28 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 		ImGui::Separator();
 
-		static char buf[256] = "";
+		static char Buf[256] = "";
 		static FString SceneName = "";
-		if (ImGui::InputText("Scene Name", buf, IM_ARRAYSIZE(buf), ImGuiInputTextFlags_EnterReturnsTrue))
+		if (ImGui::InputText("Scene Name", Buf, IM_ARRAYSIZE(Buf), ImGuiInputTextFlags_EnterReturnsTrue))
 		{
-			SceneName = buf;
+			SceneName = Buf;
 		}
 
 		if (ImGui::Button("New Scene", ImVec2(120, 0)))
 		{
 			if (!SceneName.empty())
 			{
-				std::memset(buf, 0, sizeof(buf));
-				SceneName = buf;
+				std::memset(Buf, 0, sizeof(Buf));
+				SceneName = Buf;
 			}
-			USceneManager::ClearScene();
+			FSceneManager::ClearScene();
 		}
 
 		if (ImGui::Button("Save Scene", ImVec2(120, 0)))
 		{
 			if (!SceneName.empty())
 			{
-				USceneManager::SaveScene(SceneName);
+				FSceneManager::SaveScene(SceneName);
 			}
 		}
 
@@ -635,14 +635,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		{
 			if (!SceneName.empty())
 			{
-				USceneManager::LoadScene(resourceManager, SceneName);
+				FSceneManager::LoadScene(ResourceManager, SceneName);
 				SelectedObjectIndex = -1;
 			}
 		}
 
 		ImGui::Separator();
-		ImGui::DragFloat3("Translation", &camera->RelativeLocation.x, 0.1f);
-		ImGui::DragFloat3("Rotation", &camera->RelativeRotation.x, 0.1f);
+		ImGui::DragFloat3("Translation", &Camera->RelativeLocation.X, 0.1f);
+		ImGui::DragFloat3("Rotation", &Camera->RelativeRotation.X, 0.1f);
 
 		if (ImGui::Button("Location", ImVec2(100, 0)))
 		{
@@ -676,26 +676,26 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		}
 
 
-		if (camera->IsA<UPerspectiveCamera>())
+		if (Camera->IsA<UPerspectiveCamera>())
 		{
-			ImGui::DragFloat("FovY", &perspectiveCamera.FovY, 0.1f);
+			ImGui::DragFloat("FovY", &PerspectiveCamera.FovY, 0.1f);
 		}
 		else
 		{
-			ImGui::DragFloat("HalfHeight", &orthoCamera.HalfHeight, 0.1f);
+			ImGui::DragFloat("HalfHeight", &OrthoCamera.HalfHeight, 0.1f);
 		}
 
-		if (ImGui::Checkbox("Use Perspective Camera", &usePerspectiveCamera))
+		if (ImGui::Checkbox("Use Perspective Camera", &UsePerspectiveCamera))
 		{
-			if (usePerspectiveCamera)
+			if (UsePerspectiveCamera)
 			{
-				perspectiveCamera.RelativeLocation = camera->RelativeLocation;
-				perspectiveCamera.RelativeRotation = camera->RelativeRotation;
+				PerspectiveCamera.RelativeLocation = Camera->RelativeLocation;
+				PerspectiveCamera.RelativeRotation = Camera->RelativeRotation;
 			}
 			else
 			{
-				orthoCamera.RelativeLocation = camera->RelativeLocation;
-				orthoCamera.RelativeRotation = camera->RelativeRotation;
+				OrthoCamera.RelativeLocation = Camera->RelativeLocation;
+				OrthoCamera.RelativeRotation = Camera->RelativeRotation;
 			}
 		}
 		ImGui::Separator();
@@ -708,14 +708,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
 		// 그리기 명령 실행
-		renderer.SwapBuffer();
+		Renderer.SwapBuffer();
 
-		inputContext.Update();
+		InputContext.Update();
 	}
 
-	outlinePipeline->Release();
+	OutlinePipeline->Release();
 
-	resourceManager.Release();
+	ResourceManager.Release();
 
 	FUObjectAllocator::Release();
 
@@ -724,7 +724,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	ImGui::DestroyContext();
 
 	// 렌더러 리소스 해제
-	renderer.Release();
+	Renderer.Release();
 
 	return 0;
 }

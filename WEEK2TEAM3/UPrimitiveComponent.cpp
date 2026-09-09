@@ -1,10 +1,10 @@
 #pragma once
 #include "UPrimitiveComponent.h"
 
-void UPrimitiveComponent::Render(URenderer& Renderer)
+void UPrimitiveComponent::Render(FRenderer& Renderer)
 {
-	FMatrix model = GetModelMatrix();
-	Renderer.RenderPrimitive(StaticMesh->VertexBuffer, StaticMesh->VertexCount, model);
+	FMatrix Model = GetModelMatrix();
+	Renderer.RenderPrimitive(StaticMesh->VertexBuffer, StaticMesh->VertexCount, Model);
 }
 
 FString UPrimitiveComponent::GetName()

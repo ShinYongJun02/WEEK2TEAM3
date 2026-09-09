@@ -8,7 +8,7 @@
 #include "UResourceManager.h"
 #include "FJsonParser.h"
 
-class USceneManager
+class FSceneManager
 {
 public:
 	static constexpr uint32 SceneVersion = 1;
@@ -24,7 +24,7 @@ public:
 
 		Out << "{\n";
 		Out << "\t\"Version\" : " << SceneVersion << ",\n";
-		Out << "\t\"NextUUID\" : \"" << UEngineStatics::GetNexUUID().ToString() << "\",\n";
+		Out << "\t\"NextUUID\" : \"" << FEngineStatics::GetNexUUID().ToString() << "\",\n";
 		Out << "\t\"Primitives\" : {\n";
 
 		bool bFirst = true;
@@ -108,7 +108,7 @@ public:
 				continue;
 			}
 
-			const UClass* ClassType = FindClass(TypeValue->String);
+			const FClass* ClassType = FindClass(TypeValue->String);
 			if (!ClassType || !ClassType->IsChildOf(UPrimitiveComponent::StaticClass()))
 			{
 				continue;
@@ -141,7 +141,7 @@ public:
 			Object->UUID = CurrentUUID;
 		}
 
-		UEngineStatics::SetNextUUID(StringToUUID(NextUUIDValue->AsString()));
+		FEngineStatics::SetNextUUID(StringToUUID(NextUUIDValue->AsString()));
 
 		return true;
 	}
@@ -163,6 +163,6 @@ private:
 	static void WriteVector(std::ofstream& Out, const char* Key, const FVector& Value)
 	{
 		Out << "\t\t\t\"" << Key << "\" : ["
-			<< Value.x << ", " << Value.y << ", " << Value.z << "],\n";
+			<< Value.X << ", " << Value.Y << ", " << Value.Z << "],\n";
 	}
 };

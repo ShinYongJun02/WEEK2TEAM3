@@ -3,7 +3,7 @@
 #include "Core.h"
 #include "USceneComponent.h"
 #include "UResourceManager.h"
-#include "URenderer.h"
+#include "FRenderer.h"
 #include <wrl.h>
 
 class UPrimitiveComponent : public USceneComponent
@@ -14,7 +14,7 @@ public:
 	virtual ~UPrimitiveComponent() = default;
 
 	virtual void Initialize(UResourceManager& ResourceManager) = 0;
-	virtual void Render(URenderer& Renderer);
+	virtual void Render(FRenderer& Renderer);
 	virtual float CheckIntersection(const FRay& Ray) const = 0;
 
 	inline TSharedPtr<FStaticMesh> GetStaticMesh() const { return StaticMesh; }

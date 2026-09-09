@@ -4,7 +4,7 @@
 #include "Types.h"
 #include "FUUID.h"
 
-class UEngineStatics
+class FEngineStatics
 {
 public:
 	static FUUID GenUUID()

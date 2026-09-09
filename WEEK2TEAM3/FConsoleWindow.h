@@ -20,10 +20,10 @@ struct FConsoleWindow
 		ScrollToBottom = false;
 	}
 
-	void Draw(const char* title, bool* p_open)
+	void Draw(const char* Title, bool* Open)
 	{
 		ImGui::SetNextWindowSize(ImVec2(520, 600), ImGuiCond_FirstUseEver);
-		if (!ImGui::Begin(title, p_open))
+		if (!ImGui::Begin(Title, Open))
 		{
 			ImGui::End();
 			return;
@@ -35,7 +35,7 @@ struct FConsoleWindow
 		}
 
 		ImGui::SameLine();
-		bool copy_to_clipboard = ImGui::SmallButton("Copy");
+		bool CopyToClipboard = ImGui::SmallButton("Copy");
 
 		ImGui::Separator();
 
@@ -44,17 +44,17 @@ struct FConsoleWindow
 		{
 			ImGui::Checkbox("Auto-scroll", &AutoScroll);
 			
-			bool infoFilter = LevelFilter.test(0);
-			ImGui::Checkbox("Info", &infoFilter);
-			LevelFilter.set(0, infoFilter);
+			bool InfoFilter = LevelFilter.test(0);
+			ImGui::Checkbox("Info", &InfoFilter);
+			LevelFilter.set(0, InfoFilter);
 
-			bool warningFilter = LevelFilter.test(1);
-			ImGui::Checkbox("Warning", &warningFilter);
-			LevelFilter.set(1, warningFilter);
+			bool WarningFilter = LevelFilter.test(1);
+			ImGui::Checkbox("Warning", &WarningFilter);
+			LevelFilter.set(1, WarningFilter);
 
-			bool errorFilter = LevelFilter.test(2);
-			ImGui::Checkbox("Error", &errorFilter);
-			LevelFilter.set(2, errorFilter);
+			bool ErrorFilter = LevelFilter.test(2);
+			ImGui::Checkbox("Error", &ErrorFilter);
+			LevelFilter.set(2, ErrorFilter);
 
 			ImGui::EndPopup();
 		}
@@ -70,56 +70,56 @@ struct FConsoleWindow
 		ImGui::Separator();
 
 		// Reserve enough left-over height for 1 separator + 1 input text
-		ImGuiStyle& style = ImGui::GetStyle();
+		ImGuiStyle& Style = ImGui::GetStyle();
 		if (ImGui::BeginChild("ScrollingRegion", ImVec2(0, 0), ImGuiChildFlags_NavFlattened, ImGuiWindowFlags_HorizontalScrollbar))
 		{
 			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1)); // Tighten spacing
-			if (copy_to_clipboard)
+			if (CopyToClipboard)
 			{
 				ImGui::LogToClipboard();
 			}
 
-			for (const FLog& item : FLogger::Logs)
+			for (const FLog& Item : FLogger::Logs)
 			{
 				// 필터 통과 여부 확인
-				if (!LevelFilter.test(static_cast<int32>(item.Level)))
+				if (!LevelFilter.test(static_cast<int32>(Item.Level)))
 				{
 					continue;
 				}
 
-				if (!Filter.PassFilter(item.Message.c_str()))
+				if (!Filter.PassFilter(Item.Message.c_str()))
 				{
 					continue;
 				}
 
-				ImVec4 color;
-				bool has_color = false;
+				ImVec4 Color;
+				bool HasColor = false;
 
-				if (item.Level == ELogLevel::Warning)
+				if (Item.Level == ELogLevel::Warning)
 				{
-					color = ImVec4(1.0f, 1.0f, 0.4f, 1.0f);
-					has_color = true;
+					Color = ImVec4(1.0f, 1.0f, 0.4f, 1.0f);
+					HasColor = true;
 				}
-				else if (item.Level == ELogLevel::Error) 
+				else if (Item.Level == ELogLevel::Error) 
 				{ 
-					color = ImVec4(1.0f, 0.4f, 0.4f, 1.0f);
-					has_color = true; 
+					Color = ImVec4(1.0f, 0.4f, 0.4f, 1.0f);
+					HasColor = true; 
 				}
 
-				if (has_color)
+				if (HasColor)
 				{
-					ImGui::PushStyleColor(ImGuiCol_Text, color);
+					ImGui::PushStyleColor(ImGuiCol_Text, Color);
 				}
 
-				ImGui::TextUnformatted(item.Message.c_str());
+				ImGui::TextUnformatted(Item.Message.c_str());
 
-				if (has_color)
+				if (HasColor)
 				{
 					ImGui::PopStyleColor();
 				}
 			}
 
-			if (copy_to_clipboard)
+			if (CopyToClipboard)
 			{
 				ImGui::LogFinish();
 			}

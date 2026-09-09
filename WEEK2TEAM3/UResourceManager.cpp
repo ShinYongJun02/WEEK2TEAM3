@@ -1,51 +1,51 @@
 #include "UResourceManager.h"
-#include "URenderer.h"
+#include "FRenderer.h"
 
 extern FVertex PlaneVertices[];
 extern FVertex CubeVertices[];
 extern FVertex SphereVertices[];
 
-void UResourceManager::Initialize(URenderer& renderer)
+void UResourceManager::Initialize(FRenderer& InRenderer)
 {
-	Renderer = &renderer;
+	Renderer = &InRenderer;
 
 	BuiltInStaticMeshes();
 }
 
 void SetMinMaxVertex(TSharedPtr<FStaticMesh>& StaticMesh, FVertex Vertex[])
 {
-	StaticMesh->MinVertex = FVector(Vertex[0].x, Vertex[0].y, Vertex[0].z);
-	StaticMesh->MaxVertex = FVector(Vertex[0].x, Vertex[0].y, Vertex[0].z);
+	StaticMesh->MinVertex = FVector(Vertex[0].X, Vertex[0].Y, Vertex[0].Z);
+	StaticMesh->MaxVertex = FVector(Vertex[0].X, Vertex[0].Y, Vertex[0].Z);
 
 
 
-	for (int i = 1; i < StaticMesh->VertexCount; i++)
+	for (int Index = 1; Index < StaticMesh->VertexCount; Index++)
 	{
-		if (StaticMesh->MinVertex.x > Vertex[i].x)
+		if (StaticMesh->MinVertex.X > Vertex[Index].X)
 		{
-			StaticMesh->MinVertex.x = Vertex[i].x;
+			StaticMesh->MinVertex.X = Vertex[Index].X;
 		}
-		if (StaticMesh->MaxVertex.x < Vertex[i].x)
+		if (StaticMesh->MaxVertex.X < Vertex[Index].X)
 		{
-			StaticMesh->MaxVertex.x = Vertex[i].x;
-		}
-
-		if (StaticMesh->MinVertex.y > Vertex[i].y)
-		{
-			StaticMesh->MinVertex.y = Vertex[i].y;
-		}
-		if (StaticMesh->MaxVertex.y < Vertex[i].y)
-		{
-			StaticMesh->MaxVertex.y = Vertex[i].y;
+			StaticMesh->MaxVertex.X = Vertex[Index].X;
 		}
 
-		if (StaticMesh->MinVertex.z > Vertex[i].z)
+		if (StaticMesh->MinVertex.Y > Vertex[Index].Y)
 		{
-			StaticMesh->MinVertex.z = Vertex[i].z;
+			StaticMesh->MinVertex.Y = Vertex[Index].Y;
 		}
-		if (StaticMesh->MaxVertex.z < Vertex[i].z)
+		if (StaticMesh->MaxVertex.Y < Vertex[Index].Y)
 		{
-			StaticMesh->MaxVertex.z = Vertex[i].z;
+			StaticMesh->MaxVertex.Y = Vertex[Index].Y;
+		}
+
+		if (StaticMesh->MinVertex.Z > Vertex[Index].Z)
+		{
+			StaticMesh->MinVertex.Z = Vertex[Index].Z;
+		}
+		if (StaticMesh->MaxVertex.Z < Vertex[Index].Z)
+		{
+			StaticMesh->MaxVertex.Z = Vertex[Index].Z;
 		}
 	}
 }
@@ -73,12 +73,12 @@ void UResourceManager::BuiltInStaticMeshes()
 
 void UResourceManager::Release()
 {
-	for (auto& [key, value] : StaticMeshMap)
+	for (auto& [Key, Value] : StaticMeshMap)
 	{
-		if (value && value->VertexBuffer)
+		if (Value && Value->VertexBuffer)
 		{
-			value->VertexBuffer->Release();
-			value->VertexBuffer = nullptr;
+			Value->VertexBuffer->Release();
+			Value->VertexBuffer = nullptr;
 		}
 	}
 	StaticMeshMap.clear();
@@ -86,10 +86,10 @@ void UResourceManager::Release()
 
 TSharedPtr<FStaticMesh> UResourceManager::GetStaticMesh(const FString& NameKey)
 {
-	auto it = StaticMeshMap.find(NameKey);
-	if (it != StaticMeshMap.end())
+	auto It = StaticMeshMap.find(NameKey);
+	if (It != StaticMeshMap.end())
 	{
-		return it->second;
+		return It->second;
 	}
 	else
 	{

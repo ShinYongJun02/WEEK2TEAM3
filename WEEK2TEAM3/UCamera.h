@@ -9,9 +9,9 @@ class UCamera : public USceneComponent
 	GENERATED_BODY(UCamera, USceneComponent)
 
 public:
-	float nearZ = 0.1f;
-	float farZ = 1000.0f;
-	float aspect = 1.0f;
+	float NearZ = 0.1f;
+	float FarZ = 1000.0f;
+	float Aspect = 1.0f;
 
 	// 월드의 UE기준 좌표를 렌더링 전 DX 기준으로 변환
 	FMatrix GetUEtoDXAxisSwap()
@@ -29,9 +29,9 @@ public:
 		// = 카메라를 원점으로 이동시키는 행렬(=카메라의 이동행렬의 역행렬) * 카메라를 월드좌표계에 일치시키는 회전행렬(=카메라 회전행렬의 역행렬)
 		// = 카메라 좌표계 행렬의 역행렬 (Rotation * Translation) ^ -1 = Translation ^ -1 * Rotation ^ -1
 		FMatrix TranslationInv = FMatrix::GetIdentity();
-		TranslationInv.M[3][0] = -RelativeLocation.x;
-		TranslationInv.M[3][1] = -RelativeLocation.y;
-		TranslationInv.M[3][2] = -RelativeLocation.z;
+		TranslationInv.M[3][0] = -RelativeLocation.X;
+		TranslationInv.M[3][1] = -RelativeLocation.Y;
+		TranslationInv.M[3][2] = -RelativeLocation.Z;
 
 		FMatrix ViewMatrix = TranslationInv * GetRotationMatrix().GetTranspose() * GetUEtoDXAxisSwap();
 		return ViewMatrix;
@@ -53,16 +53,16 @@ class UPerspectiveCamera : public UCamera
 public:
 	FMatrix GetProjectionMatrix() override
 	{
-		float radian = DegreeToRadian(FovY);
-		float scaleY = 1.0f / tan(radian / 2);
-		float scaleX = scaleY / aspect;
-		float r = farZ / (farZ - nearZ);
+		float Radian = DegreeToRadian(FovY);
+		float ScaleY = 1.0f / tan(Radian / 2);
+		float ScaleX = ScaleY / Aspect;
+		float R = FarZ / (FarZ - NearZ);
 
 		return FMatrix(
-			FVector4(scaleX, 0.0f, 0.0f, 0.0f),
-			FVector4(0.0f, scaleY, 0.0f, 0.0f),
-			FVector4(0.0f, 0.0f, r, 1.0f),
-			FVector4(0.0f, 0.0f, -nearZ * r, 0.0f));
+			FVector4(ScaleX, 0.0f, 0.0f, 0.0f),
+			FVector4(0.0f, ScaleY, 0.0f, 0.0f),
+			FVector4(0.0f, 0.0f, R, 1.0f),
+			FVector4(0.0f, 0.0f, -NearZ * R, 0.0f));
 	}
 
 	float FovY = 60.0f;
@@ -75,16 +75,16 @@ class UOrthoCamera : public UCamera
 public:
 	FMatrix GetProjectionMatrix() override
 	{
-		float left = -HalfHeight * aspect;
-		float right = HalfHeight * aspect;
-		float top = HalfHeight;
-		float bottom = -HalfHeight;
+		float Left = -HalfHeight * Aspect;
+		float Right = HalfHeight * Aspect;
+		float Top = HalfHeight;
+		float Bottom = -HalfHeight;
 
 		return FMatrix{
-			FVector4(2.0f / (right - left), 0.0f, 0.0f, 0.0f),
-			FVector4(0.0f, 2.0f / (top - bottom), 0.0f, 0.0f),
-			FVector4(0.0f, 0.0f, 1.0f / (farZ - nearZ), 0.0f),
-			FVector4(-(right + left) / (right - left), -(top + bottom) / (top - bottom), -nearZ / (farZ - nearZ), 1.0f)
+			FVector4(2.0f / (Right - Left), 0.0f, 0.0f, 0.0f),
+			FVector4(0.0f, 2.0f / (Top - Bottom), 0.0f, 0.0f),
+			FVector4(0.0f, 0.0f, 1.0f / (FarZ - NearZ), 0.0f),
+			FVector4(-(Right + Left) / (Right - Left), -(Top + Bottom) / (Top - Bottom), -NearZ / (FarZ - NearZ), 1.0f)
 		};
 	}
 

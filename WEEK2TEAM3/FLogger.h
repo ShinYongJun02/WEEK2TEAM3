@@ -2,7 +2,7 @@
 
 #include "Core.h"
 
-#define UE_LOG(category, level, ...) FLogger::AddLog(#category, ELogLevel::##level, __VA_ARGS__)
+#define UE_LOG(Category, Level, ...) FLogger::AddLog(#Category, ELogLevel::##Level, __VA_ARGS__)
 
 enum class ELogLevel
 {
@@ -24,7 +24,7 @@ struct FLogger
 	inline static uint32 MaxLogHistoryCount = 20;
 	inline static TDeque<FLog> Logs;
 
-	static void AddLog(const char* category, ELogLevel level, const char* fmt, ...)
+	static void AddLog(const char* Category, ELogLevel Level, const char* Fmt, ...)
 	{
 		while (Logs.size() > MaxLogHistoryCount)
 		{
@@ -32,18 +32,18 @@ struct FLogger
 		}
 
 		// FIXME-OPT
-		char buf[1024];
-		va_list args;
-		va_start(args, fmt);
-		vsnprintf(buf, sizeof(buf), fmt, args);
-		buf[sizeof(buf) - 1] = 0;
-		va_end(args);
+		char Buf[1024];
+		va_list Args;
+		va_start(Args, Fmt);
+		vsnprintf(Buf, sizeof(Buf), Fmt, Args);
+		Buf[sizeof(Buf) - 1] = 0;
+		va_end(Args);
 		
-		FLog& log = Logs.emplace_back();
-		log.Level = level;
-		log.Timestamp = std::chrono::system_clock::now();
-		log.Category = category;
-		log.Message = std::format("{}: {}", category, buf);
+		FLog& Log = Logs.emplace_back();
+		Log.Level = Level;
+		Log.Timestamp = std::chrono::system_clock::now();
+		Log.Category = Category;
+		Log.Message = std::format("{}: {}", Category, Buf);
 	}
 
 	static void ClearLog()
