@@ -503,7 +503,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			UPrimitiveComponent* prim = static_cast<UPrimitiveComponent*>(GUObjectArray[i]);
 
 			char label[64];
-			sprintf_s(label, "%s : %s", prim->GetName().c_str(), TempObject->UUID.ToString().c_str());
+			sprintf_s(label, "%s : %s", prim->GetName().c_str(), prim->UUID.ToString().c_str());
 
 			bool isSelected = (SelectedObjectIndex == prim->InternalIndex);
 			if (ImGui::Selectable(label, isSelected))
