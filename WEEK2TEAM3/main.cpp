@@ -229,7 +229,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	QueryPerformanceCounter(&currentTime);
 	lastTime = currentTime;
 	double elapsedTime = 0.0;
-	float deltaTime = 0.0f;
+	double deltaTime = 0.0f;
 
 	// 카메라
 	UPerspectiveCamera perspectiveCamera;
@@ -239,12 +239,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	orthoCamera.RelativeLocation += FVector(-5.0f);
 
 	bool pressed[7] = {}; // WSDAEQ, MR
-	float cameraSpeed = 500.0f;
+	double cameraSpeed = 0.25f;
 
 	// 마우스 추적
 	POINT pt;
 	GetCursorPos(&pt);          // 화면 좌표
 	ScreenToClient(hWnd, &pt);  // 클라이언트 좌표로 변환
+
+	int32 lastMouseX = inputContext.GetMouseX();
+	int32 lastMouseY = inputContext.GetMouseY();
 
 	//outliner
 	int32 SelectedObjectIndex = -1;
@@ -290,7 +293,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	while (bIsExit == false)
 	{
 		QueryPerformanceCounter(&currentTime);
-		deltaTime = (float)(currentTime.QuadPart - lastTime.QuadPart) / frequency.QuadPart;
+		deltaTime = (double)(currentTime.QuadPart - lastTime.QuadPart) / (double)(frequency.QuadPart);
 		lastTime = currentTime;
 
 		MSG msg;
@@ -396,12 +399,22 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		}
 
 		// 마우스 추적
+		int32 mouseX = inputContext.GetMouseX();
+		int32 mouseY = inputContext.GetMouseY();
+		float distX = mouseX - lastMouseX;
+		float distY = lastMouseY - mouseY;
+		lastMouseX = mouseX;
+		lastMouseY = mouseY;
+
+		float mappedX = Remap(mouseX, 0, renderer.GetWidth(), -1.f, 1.f);
+		float mappedY = -Remap(mouseY, 0, renderer.GetHeight(), -1.f, 1.f);
+
 		POINT temp;
 		GetCursorPos(&temp);          // 화면 좌표
-		ScreenToClient(hWnd, &temp);  // 클라이언트 좌표로 변환
-		float distX = temp.x - pt.x;
-		float distY = pt.y - temp.y;
-		pt = temp;
+		//ScreenToClient(hWnd, &temp);  // 클라이언트 좌표로 변환
+		//float distX = temp.x - pt.x;
+		//float distY = pt.y - temp.y;
+		//pt = temp;
 
 		UCamera* camera;
 		if (usePerspectiveCamera)
@@ -424,19 +437,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			camera->GetUp() * (pressed[4] - pressed[5])) * deltaTime;
 		if (pressed[6])
 		{
-			camera->RelativeRotation += FVector(0.0f, distY, distX) * deltaTime * cameraSpeed;
+			camera->RelativeRotation += FVector(0.0f, distY, distX) * cameraSpeed;
+			UE_LOG(debug, Info, "DeltaTime : .%f , Camera *  DeltaTime : .%f", deltaTime, deltaTime * cameraSpeed);
 		}
 
 		FMatrix view = camera->GetViewMatrix();
 		FMatrix projection = camera->GetProjectionMatrix();
 		FMatrix viewProjection = view * projection;
 		FMatrix invViewProjection = viewProjection.GetInverse();
-
-		int32 mouseX = inputContext.GetMouseX();
-		int32 mouseY = inputContext.GetMouseY();
-
-		float mappedX = Remap(mouseX, 0, renderer.GetWidth(), -1.f, 1.f);
-		float mappedY = -Remap(mouseY, 0, renderer.GetHeight(), -1.f, 1.f);
 
 		FVector4 ndcPos(mappedX, mappedY, 1.0f, 1.0f);
 		FVector4 worldPos = ndcPos * invViewProjection;
@@ -570,7 +578,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		}
 
 		ImGui::Begin("Place Actors");
-		ImGui::Text("FPS %.0f (%.2f ms)", 1.0f / deltaTime, deltaTime);
+		ImGui::Text("FPS %.0f (%.4f ms)", 1.0f / deltaTime, deltaTime);
 		ImGui::Separator();
 
 		if (ImGui::BeginCombo("Primitive", PrimitiveTypeNames[SelectedPrimitiveIndex]))
