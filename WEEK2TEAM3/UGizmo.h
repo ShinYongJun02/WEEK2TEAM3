@@ -66,13 +66,8 @@ public:
 
 		auto DrawLineAxis = [&](const FVector& drawAxis, const FVector& applyAxis, const FVector4& color, AxisEndPointStyle style, AxisNumber Axis)
 		{
-			FVector2 a = WorldToScreen(sceneComp.RelativeLocation + drawAxis * axisLength, viewProjection, screenWidth, screenHeight);
-			FVector2 b = WorldToScreen(sceneComp.RelativeLocation - drawAxis * axisLength, viewProjection, screenWidth, screenHeight);
+			FVector2 closestPoint = WorldToScreen(sceneComp.RelativeLocation + drawAxis * axisLength, viewProjection, screenWidth, screenHeight);
 
-			float aLength = DistanceSquared(a, center);
-			float bLength = DistanceSquared(b, center);
-
-			FVector2 closestPoint = bLength < aLength ? a : b;
 			FVector4 selectColor(1.0f, 1.0f, 0.0f, 1.0f);
 
 			FVector4 axisColor = (Axis == SelectedAxis) ? selectColor : color;
@@ -83,7 +78,6 @@ public:
 				{
 					PrevMousePos = mousePos;
 					AxisDirection = applyAxis;
-					HandleSign = (bLength < aLength) ? 1.f : -1.f;
 					HandleScreenDirection = closestPoint - center;
 					HandleScreenDirection.Normalize();
 					IsSelected = true;
@@ -148,7 +142,6 @@ public:
 						{
 							PrevMousePos = mousePos;
 							AxisDirection = u.Cross(v);
-							HandleSign = 1.f;
 							HandleScreenDirection = screenPoint - circleScreenPoints[index - 1];
 							HandleScreenDirection.Normalize();
 							IsSelected = true;
@@ -175,7 +168,6 @@ public:
 						{
 							PrevMousePos = mousePos;
 							AxisDirection = u.Cross(v);
-							HandleSign = 1.f;
 							HandleScreenDirection = circleScreenPoints[0] - screenPoint;
 							HandleScreenDirection.Normalize();
 							IsSelected = true;
@@ -258,14 +250,14 @@ public:
 
 				if (CurrentOperation == EGizmoOperation::Translate)
 				{
-					sceneComp.RelativeLocation += AxisDirection * HandleSign * amount * sensitivity;
+					sceneComp.RelativeLocation += AxisDirection * amount * sensitivity;
 				}
 				else if (CurrentOperation == EGizmoOperation::Rotate)
 				{
 					FMatrix rotationMatrix = sceneComp.GetRotationMatrix();
 
 					FQuaternion rotationQ = ToQuaternion(rotationMatrix);
-					FQuaternion deltaQ(AxisDirection, HandleSign * amount * sensitivity);
+					FQuaternion deltaQ(AxisDirection, amount * sensitivity);
 					FQuaternion finalQ = deltaQ * rotationQ;
 					finalQ.Normalize();
 
@@ -297,7 +289,6 @@ private:
 	FVector2 PrevMousePos;
 	bool IsSelected = false;	
 	FVector AxisDirection; // World +
-	int32 HandleSign;
 	FVector2 HandleScreenDirection;
 	AxisNumber SelectedAxis;
 };

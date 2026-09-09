@@ -372,20 +372,23 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			}
 		}
 
-		if (inputContext.IsKeyDown('Z'))
+		if (inputContext.IsKeyDown(VK_SPACE))
 		{
-			TrsMode = ImGuizmo::TRANSLATE;
-			CurrentGizmoOperation = EGizmoOperation::Translate;
-		}
-		else if (inputContext.IsKeyDown('X'))
-		{
-			TrsMode = ImGuizmo::ROTATE;
-			CurrentGizmoOperation = EGizmoOperation::Rotate;
-		}
-		else if (inputContext.IsKeyDown('C'))
-		{
-			TrsMode = ImGuizmo::SCALE;
-			CurrentGizmoOperation = EGizmoOperation::Scale;
+			if (CurrentGizmoOperation == EGizmoOperation::Translate)
+			{
+				TrsMode = ImGuizmo::ROTATE;
+				CurrentGizmoOperation = EGizmoOperation::Rotate;
+			}
+			else if (CurrentGizmoOperation == EGizmoOperation::Rotate)
+			{
+				TrsMode = ImGuizmo::SCALE;
+				CurrentGizmoOperation = EGizmoOperation::Scale;
+			}
+			else
+			{
+				TrsMode = ImGuizmo::TRANSLATE;
+				CurrentGizmoOperation = EGizmoOperation::Translate;
+			}
 		}
 		else if (inputContext.IsKeyDown('V'))
 		{
