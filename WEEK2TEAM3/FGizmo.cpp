@@ -54,6 +54,8 @@ void FGizmo::Draw(USceneComponent& SceneComp, const FVector& CameraPosition, con
 	FVector4 Clip = FVector4(SceneComp.RelativeLocation, 1.f) * ViewProjection;
 	bool bDrawGizmo = !(Clip.W <= 0.00001f || Clip.Z < 0.f || Clip.Z > Clip.W || Clip.X < -Clip.W || Clip.X > Clip.W || Clip.Y < -Clip.W || Clip.Y > Clip.W);
 
+	HandleScreenSegments.clear();
+
 	FVector2 Center = WorldToScreen(SceneComp.RelativeLocation, ViewProjection, ScreenWidth, ScreenHeight);
 
 	auto DrawLineAxis = [&](const FVector& DrawAxis, const FVector& ApplyAxis, const FVector4& Color, AxisEndPointStyle Style, AxisNumber Axis)
@@ -64,7 +66,7 @@ void FGizmo::Draw(USceneComponent& SceneComp, const FVector& CameraPosition, con
 
 		FVector4 AxisColor = (Axis == SelectedAxis) ? SelectColor : Color;
 
-		if (!bIsSelected && bHoverEnabled && PointToLineSegmentDistanceSquared(MousePos, Center, ClosestPoint) < 5.f * 5.f)
+		if (!bIsSelected && bHoverEnabled && PointToLineSegmentDistanceSquared(MousePos, Center, ClosestPoint) < HandleHitRadius * HandleHitRadius)
 		{
 			if (bGrabAxis)
 			{
@@ -77,6 +79,8 @@ void FGizmo::Draw(USceneComponent& SceneComp, const FVector& CameraPosition, con
 			}
 			AxisColor = FVector4(1.f, 1.f, 0.f, 1.f);
 		}
+
+		HandleScreenSegments.emplace_back(Center, ClosestPoint);
 
 		Renderer.RenderLine2D(Center, ClosestPoint, AxisColor, 5.f);
 
@@ -128,7 +132,7 @@ void FGizmo::Draw(USceneComponent& SceneComp, const FVector& CameraPosition, con
 					bCheckInteraction = Dot(CenterToLineCenterPoint, CenterToCamera) >= 0.f;
 				}
 
-				if (bCheckInteraction && bHoverEnabled && PointToLineSegmentDistanceSquared(MousePos, CircleScreenPoints[Index - 1], ScreenPoint) < 5.f * 5.f)
+				if (bCheckInteraction && bHoverEnabled && PointToLineSegmentDistanceSquared(MousePos, CircleScreenPoints[Index - 1], ScreenPoint) < HandleHitRadius * HandleHitRadius)
 				{
 					if (bGrabAxis)
 					{
@@ -154,7 +158,7 @@ void FGizmo::Draw(USceneComponent& SceneComp, const FVector& CameraPosition, con
 					bCheckInteraction = Dot(CenterToLineCenterPoint, CenterToCamera) >= 0.f;
 				}
 
-				if (bCheckInteraction && bHoverEnabled && PointToLineSegmentDistanceSquared(MousePos, ScreenPoint, CircleScreenPoints[0]) < 5.f * 5.f)
+				if (bCheckInteraction && bHoverEnabled && PointToLineSegmentDistanceSquared(MousePos, ScreenPoint, CircleScreenPoints[0]) < HandleHitRadius * HandleHitRadius)
 				{
 					if (bGrabAxis)
 					{
@@ -185,6 +189,8 @@ void FGizmo::Draw(USceneComponent& SceneComp, const FVector& CameraPosition, con
 					continue;
 				}
 			}
+
+			HandleScreenSegments.emplace_back(CircleScreenPoints[Index], CircleScreenPoints[NextIndex]);
 
 			Renderer.RenderLine2D(CircleScreenPoints[Index], CircleScreenPoints[NextIndex], AxisColor, 2.f);
 		}
@@ -269,4 +275,19 @@ void FGizmo::Draw(USceneComponent& SceneComp, const FVector& CameraPosition, con
 			SelectedAxis = AxisNumber::None;
 		}
 	}
+}
+
+bool FGizmo::IsMouseOverHandle() const
+{
+	FVector2 MousePos = FVector2(InputContext.GetMouseX(), InputContext.GetMouseY());
+
+	for (const TPair<FVector2, FVector2>& Segment : HandleScreenSegments)
+	{
+		if (PointToLineSegmentDistanceSquared(MousePos, Segment.first, Segment.second) < HandleHitRadius * HandleHitRadius)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
