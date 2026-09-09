@@ -75,7 +75,11 @@ void FGizmo::Draw(USceneComponent& SceneComp, const FVector& CameraPosition, con
 				bIsSelected = true;
 				SelectedAxis = Axis;
 			}
-			AxisColor = FVector4(1.f, 1.f, 0.f, 1.f);
+			if (bIsHoveredAxis == false)
+			{
+				bIsHoveredAxis = true;
+				AxisColor = FVector4(1.f, 1.f, 0.f, 1.f);
+			}
 		}
 
 		Renderer.RenderLine2D(Center, ClosestPoint, AxisColor, 5.f);
@@ -128,7 +132,7 @@ void FGizmo::Draw(USceneComponent& SceneComp, const FVector& CameraPosition, con
 					bCheckInteraction = Dot(CenterToLineCenterPoint, CenterToCamera) >= 0.f;
 				}
 
-				if (bCheckInteraction && bHoverEnabled && PointToLineSegmentDistanceSquared(MousePos, CircleScreenPoints[Index - 1], ScreenPoint) < 5.f * 5.f)
+				if ((!bIsSelected) && bCheckInteraction && bHoverEnabled && PointToLineSegmentDistanceSquared(MousePos, CircleScreenPoints[Index - 1], ScreenPoint) < 5.f * 5.f)
 				{
 					if (bGrabAxis)
 					{
@@ -139,8 +143,12 @@ void FGizmo::Draw(USceneComponent& SceneComp, const FVector& CameraPosition, con
 						bIsSelected = true;
 						SelectedAxis = Axis;
 					}
-					if (!bIsSelected)
+
+					if (bIsHoveredAxis == false)
+					{
+						bIsHoveredAxis = true;
 						AxisColor = FVector4(1.f, 1.f, 0.f, 1.f);
+					}
 				}
 			}
 
@@ -154,7 +162,7 @@ void FGizmo::Draw(USceneComponent& SceneComp, const FVector& CameraPosition, con
 					bCheckInteraction = Dot(CenterToLineCenterPoint, CenterToCamera) >= 0.f;
 				}
 
-				if (bCheckInteraction && bHoverEnabled && PointToLineSegmentDistanceSquared(MousePos, ScreenPoint, CircleScreenPoints[0]) < 5.f * 5.f)
+				if ((!bIsSelected) && bCheckInteraction && bHoverEnabled && PointToLineSegmentDistanceSquared(MousePos, ScreenPoint, CircleScreenPoints[0]) < 5.f * 5.f)
 				{
 					if (bGrabAxis)
 					{
@@ -165,8 +173,12 @@ void FGizmo::Draw(USceneComponent& SceneComp, const FVector& CameraPosition, con
 						bIsSelected = true;
 						SelectedAxis = Axis;
 					}
-					if (!bIsSelected)
+					if (bIsHoveredAxis == false)
+					{
+						bIsHoveredAxis = true;
 						AxisColor = FVector4(1.f, 1.f, 0.f, 1.f);
+					}
+										
 				}
 			}
 
@@ -191,6 +203,8 @@ void FGizmo::Draw(USceneComponent& SceneComp, const FVector& CameraPosition, con
 
 		Renderer.RenderCircle2D(Center, FVector4(0.8f, 0.8f, 0.8f, 1.f), 5.f);
 	};
+
+	bIsHoveredAxis = false;
 
 	if (bDrawGizmo &&CurrentOperation == EGizmoOperation::Translate)
 	{

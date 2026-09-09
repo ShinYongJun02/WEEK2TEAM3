@@ -41,6 +41,7 @@ private:
 
 	FVector2 PrevMousePos;
 	bool bIsSelected = false;
+	bool bIsHoveredAxis = false;
 	FVector AxisDirection; // World +
 	FVector2 HandleScreenDirection;
 	AxisNumber SelectedAxis;
