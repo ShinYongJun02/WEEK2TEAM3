@@ -9,7 +9,7 @@ FUUID FEngineStatics::GenUUID()
 	return ResultUUID;
 }
 
-FUUID FEngineStatics::GetNexUUID()
+FUUID FEngineStatics::GetNextUUID()
 {
 	return NextUUID;
 }

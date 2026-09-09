@@ -27,7 +27,7 @@ bool FSceneManager::SaveScene(const FString SceneName)
 
 	Out << "{\n";
 	Out << "\t\"Version\" : " << SceneVersion << ",\n";
-	Out << "\t\"NextUUID\" : \"" << FEngineStatics::GetNexUUID().ToString() << "\",\n";
+	Out << "\t\"NextUUID\" : \"" << FEngineStatics::GetNextUUID().ToString() << "\",\n";
 	Out << "\t\"Primitives\" : {\n";
 
 	bool bFirst = true;
