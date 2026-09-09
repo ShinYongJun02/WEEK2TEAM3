@@ -271,16 +271,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	};
 
 	TSharedPtr<URenderPipeline> outlinePipeline = renderer.CreateRenderPipeline();
-	outlinePipeline->SetCullMode(D3D11_CULL_NONE);
-	outlinePipeline->SetDepthStencilState(true, false);
+	outlinePipeline->SetRasterRizerState(D3D11_CULL_FRONT);
+	outlinePipeline->SetDepthStencilState(true, true);
 	outlinePipeline->SetShader("Assets/Shaders/Outline.hlsl");
 	outlinePipeline->AddConstantBuffer<FOutlineConstant>();
 
+	TSharedPtr<URenderPipeline> planeOutlinePipeline = renderer.CreateRenderPipeline();
+	planeOutlinePipeline->SetRasterRizerState(D3D11_CULL_BACK, 1);
+	planeOutlinePipeline->SetDepthStencilState(true, true);
+	planeOutlinePipeline->SetShader("Assets/Shaders/Outline.hlsl");
+	planeOutlinePipeline->AddConstantBuffer<FOutlineConstant>();
+
 	FConsoleWindow consoleWindow;
 	UGizmo gizmo(renderer, inputContext);
-
-	ImGuizmo::OPERATION TrsMode = ImGuizmo::TRANSLATE;
-	ImGuizmo::MODE WlMode = ImGuizmo::WORLD;
 
 	bool CurrentGizmoWorldMode = true;
 	EGizmoOperation CurrentGizmoOperation = EGizmoOperation::Translate;
@@ -372,29 +375,27 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			}
 		}
 
-		if (inputContext.IsKeyDown('Z'))
+		if (inputContext.IsKeyDown(VK_SPACE))
 		{
-			TrsMode = ImGuizmo::TRANSLATE;
-			CurrentGizmoOperation = EGizmoOperation::Translate;
-		}
-		else if (inputContext.IsKeyDown('X'))
-		{
-			TrsMode = ImGuizmo::ROTATE;
-			CurrentGizmoOperation = EGizmoOperation::Rotate;
-		}
-		else if (inputContext.IsKeyDown('C'))
-		{
-			TrsMode = ImGuizmo::SCALE;
-			CurrentGizmoOperation = EGizmoOperation::Scale;
+			if (CurrentGizmoOperation == EGizmoOperation::Translate)
+			{
+				CurrentGizmoOperation = EGizmoOperation::Rotate;
+			}
+			else if (CurrentGizmoOperation == EGizmoOperation::Rotate)
+			{
+				CurrentGizmoOperation = EGizmoOperation::Scale;
+			}
+			else
+			{
+				CurrentGizmoOperation = EGizmoOperation::Translate;
+			}
 		}
 		else if (inputContext.IsKeyDown('V'))
 		{
-			WlMode = ImGuizmo::WORLD;
 			CurrentGizmoWorldMode = true;
 		}
 		else if (inputContext.IsKeyDown('B'))
 		{
-			WlMode = ImGuizmo::LOCAL;
 			CurrentGizmoWorldMode = false;
 		}
 
@@ -448,6 +449,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			ray.Direction = FVector(worldPos.x, worldPos.y, worldPos.z) - camera->RelativeLocation;
 			ray.Direction.Normalize();
 
+			float closestT = FLT_MAX;
 			for (int i = 0; i < GUObjectArray.size(); i++)
 			{
 				if (!GUObjectArray[i]->IsA<UPrimitiveComponent>())
@@ -456,10 +458,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				}
 
 				UPrimitiveComponent* SelectedObject = static_cast<UPrimitiveComponent*>(GUObjectArray[i]);
-				if (SelectedObject->CheckIntersection(ray))
+				float t = SelectedObject->CheckIntersection(ray);
+				if (t >= 0.0f && t < closestT)
 				{
+					closestT = t;
 					SelectedObjectIndex = SelectedObject->InternalIndex;
-					break;
 				}
 			}
 		}
@@ -467,9 +470,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		// Transform
 		renderer.Prepare();
 		renderer.UpdateViewConstant(viewProjection);
-
-		renderer.RenderWorldAxis(view, projection, FVector4(0.f, 0.f, 1.f, 1.f), Up, 2.0f);
-		renderer.RenderWorldGrid(viewProjection, camera->RelativeLocation);
 
 		for (int32 i = 0; i < GUObjectArray.size(); i++)
 		{
@@ -480,12 +480,21 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				UPrimitiveComponent* prim = static_cast<UPrimitiveComponent*>(obj);
 				if (i == SelectedObjectIndex)
 				{
-					outlinePipeline->UpdateConstantBuffer(0, FOutlineConstant{ prim->GetModelMatrix(), viewProjection, FVector(1.f, 1.f, 1.f), 0.03f });
-					renderer.RenderPrimitive(outlinePipeline, prim->GetStaticMesh()->VertexBuffer, prim->GetStaticMesh()->VertexCount);
+					TSharedPtr<URenderPipeline> pipeline = outlinePipeline;
+					if (prim->IsA<UPlaneComp>())
+					{
+						planeOutlinePipeline->UpdateConstantBuffer(0, FOutlineConstant{ prim->GetModelMatrix(), viewProjection, FVector(1.f, 1.f, 1.f), 0.03f });
+						pipeline = planeOutlinePipeline;
+					}
+					pipeline->UpdateConstantBuffer(0, FOutlineConstant{ prim->GetModelMatrix(), viewProjection, FVector(1.f, 1.f, 1.f), 0.03f });
+					renderer.RenderPrimitive(pipeline, prim->GetStaticMesh()->VertexBuffer, prim->GetStaticMesh()->VertexCount);
 				}
 				prim->Render(renderer);
 			}
 		}
+
+		renderer.RenderWorldAxis(view, projection, FVector4(0.f, 0.f, 1.f, 1.f), Up, 2.0f);
+		renderer.RenderWorldGrid(viewProjection, camera->RelativeLocation);
 
 		ImGui_ImplDX11_NewFrame();
 		ImGui_ImplWin32_NewFrame();
@@ -652,6 +661,38 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		ImGui::Separator();
 		ImGui::DragFloat3("Translation", &camera->RelativeLocation.x, 0.1f);
 		ImGui::DragFloat3("Rotation", &camera->RelativeRotation.x, 0.1f);
+
+		if (ImGui::Button("Location", ImVec2(100, 0)))
+		{
+			CurrentGizmoOperation = EGizmoOperation::Translate;
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Rotation", ImVec2(100, 0)))
+		{
+			CurrentGizmoOperation = EGizmoOperation::Rotate;
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Scale", ImVec2(100, 0)))
+		{
+			CurrentGizmoOperation = EGizmoOperation::Scale;
+		}
+
+		if (ImGui::Button("World", ImVec2(100, 0)))
+		{
+			CurrentGizmoWorldMode = true;
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Local", ImVec2(100, 0)))
+		{
+			CurrentGizmoWorldMode = false;
+		}
+
 
 		if (camera->IsA<UPerspectiveCamera>())
 		{

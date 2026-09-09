@@ -12,5 +12,5 @@ public:
 
 	void Initialize(UResourceManager& ResourceManager) override;
 
-	bool CheckIntersection(const FRay& Ray) const override;
+	float CheckIntersection(const FRay& Ray) const override;
 };
