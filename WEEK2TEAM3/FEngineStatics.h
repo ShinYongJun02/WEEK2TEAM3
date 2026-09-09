@@ -6,7 +6,7 @@ class FEngineStatics
 {
 public:
 	static FUUID GenUUID();
-	static FUUID GetNexUUID();
+	static FUUID GetNextUUID();
 	static void SetNextUUID(FUUID InUUID);
 
 private:

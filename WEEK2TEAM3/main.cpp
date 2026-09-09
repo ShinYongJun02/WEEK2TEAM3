@@ -183,6 +183,9 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 	FRenderer Renderer;
 	Renderer.Create(WindowHandle);
 
+	// Init NextUUID
+	FEngineStatics::SetNextUUID(FUUID::NewUUID());
+
 	FUObjectAllocator::Initialize(1024 * 1024 * 100); // 100MB
 
 	UResourceManager ResourceManager;
@@ -395,26 +398,34 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 		if (InputContext.IsMouseButtonDown(0)) {
 			if (!ImGui::GetIO().WantCaptureMouse)
 			{
-				SelectedObjectIndex = -1;
-				FRay Ray;
-				Ray.Origin = Camera->RelativeLocation;
-				Ray.Direction = FVector(WorldPos.X, WorldPos.Y, WorldPos.Z) - Camera->RelativeLocation;
-				Ray.Direction.Normalize();
+				// 기즈모 핸들 위에서 누른 클릭은 기즈모가 가져간다.
+				// 핸들이 오브젝트 실루엣 밖으로 나와 있어도 피킹이 선택을 지우지 않도록,
+				// 레이캐스트보다 기즈모에 우선권을 준다.
+				const bool bClickedGizmoHandle = SelectedObjectIndex != -1 && Gizmo.IsMouseOverHandle();
 
-				float ClosestT = FLT_MAX;
-				for (int Index = 0; Index < GUObjectArray.size(); Index++)
+				if (!bClickedGizmoHandle)
 				{
-					if (!GUObjectArray[Index]->IsA<UPrimitiveComponent>())
-					{
-						continue;
-					}
+					SelectedObjectIndex = -1;
+					FRay Ray;
+					Ray.Origin = Camera->RelativeLocation;
+					Ray.Direction = FVector(WorldPos.X, WorldPos.Y, WorldPos.Z) - Camera->RelativeLocation;
+					Ray.Direction.Normalize();
 
-					UPrimitiveComponent* SelectedObject = static_cast<UPrimitiveComponent*>(GUObjectArray[Index]);
-					float T = SelectedObject->CheckIntersection(Ray);
-					if (T >= 0.0f && T < ClosestT)
+					float ClosestT = FLT_MAX;
+					for (int Index = 0; Index < GUObjectArray.size(); Index++)
 					{
-						ClosestT = T;
-						SelectedObjectIndex = SelectedObject->InternalIndex;
+						if (!GUObjectArray[Index]->IsA<UPrimitiveComponent>())
+						{
+							continue;
+						}
+
+						UPrimitiveComponent* SelectedObject = static_cast<UPrimitiveComponent*>(GUObjectArray[Index]);
+						float T = SelectedObject->CheckIntersection(Ray);
+						if (T >= 0.0f && T < ClosestT)
+						{
+							ClosestT = T;
+							SelectedObjectIndex = SelectedObject->InternalIndex;
+						}
 					}
 				}
 			}
@@ -579,6 +590,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 				std::memset(Buf, 0, sizeof(Buf));
 				SceneName = Buf;
 			}
+			SelectedObjectIndex = -1;
 			FSceneManager::ClearScene();
 		}
 
@@ -636,7 +648,6 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 			bCurrentGizmoWorldMode = false;
 		}
 
-
 		if (Camera->IsA<UPerspectiveCamera>())
 		{
 			ImGui::DragFloat("FovY", &PerspectiveCamera.FovY, 0.1f);
@@ -659,6 +670,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 				OrthoCamera.RelativeRotation = Camera->RelativeRotation;
 			}
 		}
+
 		ImGui::Separator();
 		ImGui::Text("Heap Size: %zu bytes", FUObjectAllocator::GetHeapSize());
 		ImGui::Text("Total Allocation Bytes: %u bytes", FUObjectAllocator::GetTotalAllocationBytes());
@@ -674,6 +686,13 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 		InputContext.Update();
 	}
 
+	for (int32 Index = 0; Index < GUObjectArray.size(); Index++)
+	{
+		FObjectFactory::DestroyObject(GUObjectArray[Index]);
+	}
+	GUObjectArray.clear();
+
+	PlaneOutlinePipeline->Release();
 	OutlinePipeline->Release();
 
 	ResourceManager.Release();
