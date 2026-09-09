@@ -4,6 +4,7 @@
 void UCubeComp::Initialize(UResourceManager& ResourceManager)
 {
 	StaticMesh = ResourceManager.GetStaticMesh("Cube");
+	Name = "Cube";
 }
 
 float UCubeComp::CheckIntersection(const FRay& Ray) const

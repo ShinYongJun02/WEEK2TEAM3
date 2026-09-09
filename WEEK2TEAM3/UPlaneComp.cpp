@@ -3,6 +3,7 @@
 void UPlaneComp::Initialize(UResourceManager& ResourceManager)
 {
 	StaticMesh = ResourceManager.GetStaticMesh("Plane");
+	Name = "Plane";
 }
 
 float UPlaneComp::CheckIntersection(const FRay& Ray) const

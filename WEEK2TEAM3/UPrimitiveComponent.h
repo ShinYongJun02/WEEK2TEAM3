@@ -18,7 +18,9 @@ public:
 	virtual float CheckIntersection(const FRay& Ray) const = 0;
 
 	inline TSharedPtr<FStaticMesh> GetStaticMesh() const { return StaticMesh; }
+	FString GetName();
 
 protected:
 	TSharedPtr<FStaticMesh> StaticMesh = nullptr;
+	FString Name;
 };

@@ -4,6 +4,7 @@
 void USphereComp::Initialize(UResourceManager& ResourceManager)
 {
 	StaticMesh = ResourceManager.GetStaticMesh("Sphere");
+	Name = "Sphere";
 }
 
 float USphereComp::CheckIntersection(const FRay& Ray) const
