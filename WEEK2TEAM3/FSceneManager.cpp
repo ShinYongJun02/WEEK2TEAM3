@@ -155,7 +155,7 @@ void FSceneManager::ClearScene()
 	{
 		if (GUObjectArray[Index]->IsA<UPrimitiveComponent>())
 		{
-			delete GUObjectArray[Index];
+			FObjectFactory::DestroyObject(GUObjectArray[Index]);
 		}
 	}
 }
