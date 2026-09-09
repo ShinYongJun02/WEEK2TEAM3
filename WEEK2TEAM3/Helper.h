@@ -5,10 +5,12 @@
 
 constexpr float PI = 3.14159265358979323846f;
 constexpr float Epsilon = 1e-6f;
+constexpr float Rad2Deg = 180.0f / PI;
+constexpr float Deg2Rad = PI / 180.0f;
 
 static float DegreeToRadian(float degree)
 {
-	return degree * PI / 180.0f;
+	return degree * Deg2Rad;
 }
 
 static bool EpsilonEqual(float a, float b, float epsilon = Epsilon)
@@ -19,6 +21,11 @@ static bool EpsilonEqual(float a, float b, float epsilon = Epsilon)
 static float Remap(float value, float inMin, float inMax, float outMin, float outMax)
 {
 	return (value - inMin) / (inMax - inMin) * (outMax - outMin) + outMin;
+}
+
+static float Clamp(float value, float min, float max)
+{
+	return value < min ? min : (value > max ? max : value);
 }
 
 static FMatrix Translate(float x, float y, float z)
@@ -83,6 +90,88 @@ static FMatrix RotateZ(float angle)
 static FMatrix Rotate(float angleX, float angleY, float angleZ)
 {
 	return RotateX(angleX) * RotateY(angleY) * RotateZ(angleZ);
+}
+
+static FVector Rotate(const FQuaternion& q, const FVector& v)
+{
+	FQuaternion qv(v.x, v.y, v.z, 0.0f);
+	FQuaternion invQ = q.Inverse();
+	return (q * qv * invQ).v;
+}
+
+static FMatrix ToMatrix(const FQuaternion& q)
+{
+	float xx = q.x * q.x;
+	float yy = q.y * q.y;
+	float zz = q.z * q.z;
+	float xy = q.x * q.y;
+	float xz = q.x * q.z;
+	float yz = q.y * q.z;
+	float wx = q.w * q.x;
+	float wy = q.w * q.y;
+	float wz = q.w * q.z;
+
+	return FMatrix(
+		FVector4(1.0f - 2.0f * (yy + zz), 2.0f * (xy + wz), 2.0f * (xz - wy), 0.0f),
+		FVector4(2.0f * (xy - wz), 1.0f - 2.0f * (xx + zz), 2.0f * (yz + wx), 0.0f),
+		FVector4(2.0f * (xz + wy), 2.0f * (yz - wx), 1.0f - 2.0f * (xx + yy), 0.0f),
+		FVector4(0.0f, 0.0f, 0.0f, 1.0f)
+	);
+}
+
+static FQuaternion ToQuaternion(const FMatrix& m)
+{
+	float trace = m.M[0][0] + m.M[1][1] + m.M[2][2];
+	
+	FQuaternion q;
+	if (trace > 0.f)
+	{
+		float s = sqrt(trace + 1.f);
+		q[3] = s * 0.5f;
+
+		float t = 0.5f / s;
+
+		q[0] = (m.M[1][2] - m.M[2][1]) * t;
+		q[1] = (m.M[2][0] - m.M[0][2]) * t;
+		q[2] = (m.M[0][1] - m.M[1][0]) * t;
+	}
+	else
+	{
+		int32 i = 0;
+		if (m.M[1][1] > m.M[0][0]) i = 1;
+		if (m.M[2][2] > m.M[i][i]) i = 2;
+		
+		static const int32 next[3] = { 1, 2, 0 };
+		
+		int32 j = next[i];
+		int32 k = next[j];
+		
+		float s = sqrt((m.M[i][i] - (m.M[j][j] + m.M[k][k])) + 1.f);
+		q[i] = s * 0.5f;
+
+		float t = s;
+		if (s != 0.f) t = 0.5f / s;
+
+		q[3] = (m.M[j][k] - m.M[k][j]) * t;
+		q[j] = (m.M[j][i] + m.M[i][j]) * t;
+		q[k] = (m.M[k][i] + m.M[i][k]) * t;
+	}
+
+	return q;
+}
+
+static FVector ExtractRotationFromMatrix(const FMatrix& m)
+{
+	float y = asin(Clamp(m.M[0][2], -1.f, 1.f));
+	float x = atan2(-m.M[1][2], m.M[2][2]);
+	float z = atan2(m.M[0][1], m.M[0][0]);
+	return FVector(x, y, z);
+}
+
+static FVector ToEulerAngles(const FQuaternion& q)
+{
+	FMatrix m = ToMatrix(q);
+	return ExtractRotationFromMatrix(m);
 }
 
 static FMatrix Ortho(float left, float right, float bottom, float top, float nearZ, float farZ)
@@ -247,5 +336,10 @@ static void GenerateCircleVertices(const std::function<void(int32 index, const F
 
 		handler(i, FVector2(x, y));
 	}
+}
+
+static FVector Lerp(const FVector& a, const FVector& b, float t)
+{
+	return a * (1.0f - t) + b * t;
 }
 

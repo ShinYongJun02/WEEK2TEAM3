@@ -15,6 +15,12 @@ void URenderPipeline::Release()
 		DepthStencilState = nullptr;
 	}
 
+	if (BlendState)
+	{
+		BlendState->Release();
+		BlendState = nullptr;
+	}
+
 	if (VertexShader)
 	{
 		VertexShader->Release();
@@ -72,6 +78,17 @@ void URenderPipeline::SetDepthStencilState(bool enableDepthTest, bool enableDept
 	depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
 
 	Device->CreateDepthStencilState(&depthStencilDesc, &DepthStencilState);
+}
+
+void URenderPipeline::SetBlendState(const D3D11_BLEND_DESC& blendDesc)
+{
+	if (BlendState)
+	{
+		BlendState->Release();
+		BlendState = nullptr;
+	}
+
+	Device->CreateBlendState(&blendDesc, &BlendState);
 }
 
 void URenderPipeline::SetShader(const FString& shaderPath)

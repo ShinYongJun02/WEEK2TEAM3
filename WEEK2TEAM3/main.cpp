@@ -271,7 +271,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	outlinePipeline->AddConstantBuffer<FOutlineConstant>();
 
 	FConsoleWindow consoleWindow;
-	UGizmo gizmo(inputContext);
+	UGizmo gizmo(renderer, inputContext);
 
 	ImGuizmo::OPERATION TrsMode = ImGuizmo::TRANSLATE;
 	ImGuizmo::MODE WlMode = ImGuizmo::WORLD;
@@ -461,8 +461,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 		// Transform
 		renderer.Prepare();
-
 		renderer.UpdateViewConstant(viewProjection);
+
+		renderer.RenderWorldAxis(view, projection, FVector4(0.f, 0.f, 1.f, 1.f), Up, 2.0f);
+		renderer.RenderWorldGrid(viewProjection, camera->RelativeLocation);
 
 		for (int32 i = 0; i < GUObjectArray.size(); i++)
 		{
@@ -529,9 +531,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		// ImGuizmo
 		if (SelectedObjectIndex != -1)
 		{
-#if 0
 			TempObject = GUObjectArray[SelectedObjectIndex];
 			UPrimitiveComponent* SelectedObject = dynamic_cast<UPrimitiveComponent*>(TempObject);
+#if 0
 			FMatrix Mat = SelectedObject->GetModelMatrix();
 
 			if (SelectedObject)
@@ -556,10 +558,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				}
 			}
 #else
-			UPrimitiveComponent* SelectedObject = static_cast<UPrimitiveComponent*>(GUObjectArray[SelectedObjectIndex]);
 			gizmo.SetOperation(CurrentGizmoOperation);
 			gizmo.SetWorldMode(CurrentGizmoWorldMode);
-			gizmo.Draw(*SelectedObject, viewProjection, renderer);
+			gizmo.Draw(*SelectedObject, camera->RelativeLocation, viewProjection);
 #endif
 		}
 

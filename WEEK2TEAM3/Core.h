@@ -485,6 +485,60 @@ inline static FVector4 operator*(const FVector4& vec, const FMatrix& mat)
 	return result;
 }
 
+struct FQuaternion
+{
+	union {
+		struct {
+			float x, y, z, w;
+		};
+		struct {
+			FVector v;
+			float s;
+		};
+		float data[4];
+	};
+
+	FQuaternion() : x(0), y(0), z(0), w(1) {}
+	FQuaternion(float _x, float _y, float _z, float _w) : x(_x), y(_y), z(_z), w(_w) {}
+	FQuaternion(FVector axis, float angle)
+	{
+		float halfAngle = angle * 0.5f;
+		float s = sin(halfAngle);
+		x = axis.x * s;
+		y = axis.y * s;
+		z = axis.z * s;
+		w = cos(halfAngle);
+	}
+
+	void Normalize()
+	{
+		float length = sqrt(x * x + y * y + z * z + w * w);
+		if (length > 0.0f)
+		{
+			x /= length;
+			y /= length;
+			z /= length;
+			w /= length;
+		}
+	}
+
+	FQuaternion Inverse() const {
+		return FQuaternion(-x, -y, -z, w);
+	}
+
+	FQuaternion operator*(const FQuaternion& other) const
+	{
+		FVector axis = other.v * w + v * other.s + v.Cross(other.v);
+		float scalar = s * other.s - v.Dot(other.v);
+		return FQuaternion(axis.x, axis.y, axis.z, scalar);
+	}
+
+	float& operator[](int index)
+	{
+		return data[index];
+	}
+};
+
 struct FRay
 {
 	FVector Origin;

@@ -22,6 +22,7 @@ public:
 
 	void SetCullMode(D3D11_CULL_MODE cullMode);
 	void SetDepthStencilState(bool enableDepthTest, bool enableDepthWrite);
+	void SetBlendState(const D3D11_BLEND_DESC& blendDesc);
 	void SetShader(const FString& shaderPath);
 
 	template <typename T>
@@ -69,6 +70,7 @@ private:
 	ID3D11RasterizerState* RasterizerState = nullptr;
 	ID3D11DepthStencilState* DepthStencilState = nullptr;
 	ID3D11InputLayout* InputLayout = nullptr;
+	ID3D11BlendState* BlendState = nullptr;
 	uint32 Stride = 0;
 	ID3D11VertexShader* VertexShader = nullptr;
 	ID3D11PixelShader* PixelShader = nullptr;
