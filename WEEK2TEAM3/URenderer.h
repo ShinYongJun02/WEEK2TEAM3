@@ -455,7 +455,7 @@ public:
 
 	void SwapBuffer()
 	{
-		SwapChain->Present(1, 0);
+		SwapChain->Present(0, 0);
 	}
 
 	inline UINT GetWidth() const

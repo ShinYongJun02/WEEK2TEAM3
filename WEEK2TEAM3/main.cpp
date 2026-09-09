@@ -224,9 +224,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	const int targetFPS = 144;
 	const double targetFrameTime = 1000.0 / targetFPS;
 	LARGE_INTEGER frequency;
+	LARGE_INTEGER currentTime, lastTime;
 	QueryPerformanceFrequency(&frequency);
-	LARGE_INTEGER startTime, endTime;
+	QueryPerformanceCounter(&currentTime);
+	lastTime = currentTime;
 	double elapsedTime = 0.0;
+	float deltaTime = 0.0f;
 
 	// 카메라
 	UPerspectiveCamera perspectiveCamera;
@@ -236,7 +239,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	orthoCamera.RelativeLocation += FVector(-5.0f);
 
 	bool pressed[7] = {}; // WSDAEQ, MR
-	float cameraSpeed = 5.0f;
+	float cameraSpeed = 500.0f;
 
 	// 마우스 추적
 	POINT pt;
@@ -286,7 +289,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	while (bIsExit == false)
 	{
-		QueryPerformanceCounter(&startTime);
+		QueryPerformanceCounter(&currentTime);
+		deltaTime = (float)(currentTime.QuadPart - lastTime.QuadPart) / frequency.QuadPart;
+		lastTime = currentTime;
 
 		MSG msg;
 
@@ -416,10 +421,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		camera->RelativeLocation += (
 			camera->GetForward() * (pressed[0] - pressed[1]) +
 			camera->GetRight() * (pressed[2] - pressed[3]) +
-			camera->GetUp() * (pressed[4] - pressed[5])) * ((float)elapsedTime / 1000.0f);
+			camera->GetUp() * (pressed[4] - pressed[5])) * deltaTime;
 		if (pressed[6])
 		{
-			camera->RelativeRotation += FVector(0.0f, distY, distX) * ((float)elapsedTime / 1000.0f) * cameraSpeed;
+			camera->RelativeRotation += FVector(0.0f, distY, distX) * deltaTime * cameraSpeed;
 		}
 
 		FMatrix view = camera->GetViewMatrix();
@@ -565,7 +570,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		}
 
 		ImGui::Begin("Place Actors");
-		ImGui::Text("FPS %.0f (%.2f ms)", ImGui::GetIO().Framerate, 1000.0f / ImGui::GetIO().Framerate);
+		ImGui::Text("FPS %.0f (%.2f ms)", 1.0f / deltaTime, deltaTime);
 		ImGui::Separator();
 
 		if (ImGui::BeginCombo("Primitive", PrimitiveTypeNames[SelectedPrimitiveIndex]))
@@ -664,15 +669,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		renderer.SwapBuffer();
 
 		inputContext.Update();
-
-		do
-		{
-			Sleep(0);
-			QueryPerformanceCounter(&endTime);
-
-			// 한 프레임이 소요된 시간 계산 (밀리초 단위로 변환)
-			elapsedTime = (endTime.QuadPart - startTime.QuadPart) * 1000.0 / frequency.QuadPart;
-		} while (elapsedTime < targetFrameTime);
 	}
 
 	outlinePipeline->Release();
