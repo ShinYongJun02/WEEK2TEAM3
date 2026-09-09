@@ -183,6 +183,9 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 	FRenderer Renderer;
 	Renderer.Create(WindowHandle);
 
+	// Init NextUUID
+	FEngineStatics::SetNextUUID(FUUID::NewUUID());
+
 	FUObjectAllocator::Initialize(1024 * 1024 * 100); // 100MB
 
 	UResourceManager ResourceManager;
@@ -587,6 +590,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 				std::memset(Buf, 0, sizeof(Buf));
 				SceneName = Buf;
 			}
+			SelectedObjectIndex = -1;
 			FSceneManager::ClearScene();
 		}
 
