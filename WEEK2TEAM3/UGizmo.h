@@ -179,7 +179,7 @@ public:
 					}
 				}
 
-			}, FVector2(0.f), axisLength, numSegments);
+			}, axisLength, numSegments);
 
 			for (int32 i = 0; i < numSegments; ++i)
 			{

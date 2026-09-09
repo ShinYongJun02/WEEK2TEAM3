@@ -6,7 +6,7 @@ void USphereComp::Initialize(UResourceManager& ResourceManager)
 	StaticMesh = ResourceManager.GetStaticMesh("Sphere");
 }
 
-bool USphereComp::CheckIntersection(const FRay& Ray) const
+float USphereComp::CheckIntersection(const FRay& Ray) const
 {
 	FMatrix ModelMatrix = GetModelMatrix();
 	FMatrix InvModelMatrix = ModelMatrix.GetInverse();
@@ -20,9 +20,10 @@ bool USphereComp::CheckIntersection(const FRay& Ray) const
 
 	if (!(FRay::CheckAABB(LocalRay, StaticMesh.get()->MinVertex, StaticMesh.get()->MaxVertex)))
 	{
-		return false;
+		return -1.0f;
 	}
 
+	float closestT = -1.0f;
 	for (uint32 i = 0; i < StaticMesh->VertexCount; i += 3)
 	{
 		FTriangle Triangle{
@@ -31,12 +32,15 @@ bool USphereComp::CheckIntersection(const FRay& Ray) const
 			FVector(SphereVertices[i + 2].x, SphereVertices[i + 2].y, SphereVertices[i + 2].z)
 		};
 
-		FVector crossPoint;
-		if (Raycast(LocalRay, Triangle, crossPoint))
+		float t = Raycast(LocalRay, Triangle);
+		if (t >= 0.0f)
 		{
-			return true;
+			if (closestT < 0.0f || t < closestT)
+			{
+				closestT = t;
+			}
 		}
 	}
 
-	return false;
+	return closestT;
 }
