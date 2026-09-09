@@ -279,9 +279,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	FConsoleWindow consoleWindow;
 	UGizmo gizmo(renderer, inputContext);
 
-	ImGuizmo::OPERATION TrsMode = ImGuizmo::TRANSLATE;
-	ImGuizmo::MODE WlMode = ImGuizmo::WORLD;
-
 	bool CurrentGizmoWorldMode = true;
 	EGizmoOperation CurrentGizmoOperation = EGizmoOperation::Translate;
 
@@ -376,28 +373,23 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		{
 			if (CurrentGizmoOperation == EGizmoOperation::Translate)
 			{
-				TrsMode = ImGuizmo::ROTATE;
 				CurrentGizmoOperation = EGizmoOperation::Rotate;
 			}
 			else if (CurrentGizmoOperation == EGizmoOperation::Rotate)
 			{
-				TrsMode = ImGuizmo::SCALE;
 				CurrentGizmoOperation = EGizmoOperation::Scale;
 			}
 			else
 			{
-				TrsMode = ImGuizmo::TRANSLATE;
 				CurrentGizmoOperation = EGizmoOperation::Translate;
 			}
 		}
 		else if (inputContext.IsKeyDown('V'))
 		{
-			WlMode = ImGuizmo::WORLD;
 			CurrentGizmoWorldMode = true;
 		}
 		else if (inputContext.IsKeyDown('B'))
 		{
-			WlMode = ImGuizmo::LOCAL;
 			CurrentGizmoWorldMode = false;
 		}
 
@@ -657,7 +649,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 		if (ImGui::Button("Location", ImVec2(100, 0)))
 		{
-			TrsMode = ImGuizmo::TRANSLATE;
 			CurrentGizmoOperation = EGizmoOperation::Translate;
 		}
 
@@ -665,7 +656,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 		if (ImGui::Button("Rotation", ImVec2(100, 0)))
 		{
-			TrsMode = ImGuizmo::ROTATE;
 			CurrentGizmoOperation = EGizmoOperation::Rotate;
 		}
 
@@ -673,13 +663,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 		if (ImGui::Button("Scale", ImVec2(100, 0)))
 		{
-			TrsMode = ImGuizmo::SCALE;
 			CurrentGizmoOperation = EGizmoOperation::Scale;
 		}
 
 		if (ImGui::Button("World", ImVec2(100, 0)))
 		{
-			WlMode = ImGuizmo::WORLD;
 			CurrentGizmoWorldMode = true;
 		}
 
@@ -687,7 +675,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 		if (ImGui::Button("Local", ImVec2(100, 0)))
 		{
-			WlMode = ImGuizmo::LOCAL;
 			CurrentGizmoWorldMode = false;
 		}
 
