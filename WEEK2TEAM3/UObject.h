@@ -85,4 +85,6 @@ struct FObjectFactory
 
 		return Obj;
 	}
+
+	static void DestroyObject(UObject* Obj);
 };
