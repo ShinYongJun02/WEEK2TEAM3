@@ -288,7 +288,7 @@ static float PointToLineSegmentDistanceSquared(const FVector2& point, const FVec
 		projectedLength = 0.f;
 	}
 	else if (projectedLength > lineLength)
-	{
+	{ 
 		projectedLength = lineLength;
 	}
 
