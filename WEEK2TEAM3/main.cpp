@@ -444,6 +444,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		worldPos /= worldPos.w;
 
 		if (inputContext.IsMouseButtonDown(0)) {
+			SelectedObjectIndex = -1;
 			FRay ray;
 			ray.Origin = camera->RelativeLocation;
 			ray.Direction = FVector(worldPos.x, worldPos.y, worldPos.z) - camera->RelativeLocation;
