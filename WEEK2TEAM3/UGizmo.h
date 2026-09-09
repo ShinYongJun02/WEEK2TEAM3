@@ -44,7 +44,9 @@ public:
 
 	void Draw(USceneComponent& sceneComp, const FVector& cameraPosition, const FMatrix& viewProjection)
 	{
-		const float axisLength = 0.4f;
+		FVector centerToCamera = cameraPosition - sceneComp.RelativeLocation;
+		float Distance = centerToCamera.Length();
+		const float axisLength = 0.1f * Distance;
 		const float screenWidth = static_cast<float>(Renderer.GetWidth());
 		const float screenHeight = static_cast<float>(Renderer.GetHeight());
 
@@ -54,7 +56,6 @@ public:
 		FVector4 clip = FVector4(sceneComp.RelativeLocation, 1.f) * viewProjection;
 		bool drawGizmo = !(clip.w <= 0.00001f || clip.z < 0.f || clip.z > clip.w || clip.x < -clip.w || clip.x > clip.w || clip.y < -clip.w || clip.y > clip.w);
 
-		FVector centerToCamera = cameraPosition - sceneComp.RelativeLocation;
 		FVector2 center = WorldToScreen(sceneComp.RelativeLocation, viewProjection, screenWidth, screenHeight);
 
 		enum class AxisEndPointStyle

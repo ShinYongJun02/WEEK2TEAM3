@@ -624,6 +624,21 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 		ImGui::Separator();
 
+		static char buf[256] = "";
+		static FString SceneName = "";
+		if (ImGui::InputText("Scene Name", buf, IM_ARRAYSIZE(buf), ImGuiInputTextFlags_EnterReturnsTrue))
+		{
+			SceneName = buf;
+		}
+
+		if (ImGui::Button("New Scene", ImVec2(120, 0)))
+		{
+			if (!SceneName.empty())
+			{
+				// 씬
+			}
+		}
+
 		if (ImGui::Button("Save Scene", ImVec2(120, 0)))
 		{
 			USceneManager::SaveScene();
@@ -636,15 +651,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			USceneManager::LoadScene(resourceManager);
 			SelectedObjectIndex = -1;
 		}
-		ImGui::End();
 
-		ImGui::Begin("Program Properties");
-		ImGui::Text("Heap Size: %zu bytes", FUObjectAllocator::GetHeapSize());
-		ImGui::Text("Total Allocation Bytes: %u bytes", FUObjectAllocator::GetTotalAllocationBytes());
-		ImGui::Text("Total Allocation Count: %u", FUObjectAllocator::GetTotalAllocationCount());
-		ImGui::End();
-
-		ImGui::Begin("Debug Camera");
+		ImGui::Separator();
 		ImGui::DragFloat3("Translation", &camera->RelativeLocation.x, 0.1f);
 		ImGui::DragFloat3("Rotation", &camera->RelativeRotation.x, 0.1f);
 
@@ -670,7 +678,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				orthoCamera.RelativeRotation = camera->RelativeRotation;
 			}
 		}
-
+		ImGui::Separator();
+		ImGui::Text("Heap Size: %zu bytes", FUObjectAllocator::GetHeapSize());
+		ImGui::Text("Total Allocation Bytes: %u bytes", FUObjectAllocator::GetTotalAllocationBytes());
+		ImGui::Text("Total Allocation Count: %u", FUObjectAllocator::GetTotalAllocationCount());
 		ImGui::End();
 
 		ImGui::Render();
