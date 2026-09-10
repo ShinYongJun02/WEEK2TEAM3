@@ -30,7 +30,6 @@
 //  2025-04-30: Inputs: Fixed an issue where externally losing mouse capture (due to e.g. focus loss) would fail to claim it again the next subsequent click. (#8594)
 //  2025-03-10: When dealing with OEM keys, use scancodes instead of translated keycodes to choose ImGuiKey values. (#7136, #7201, #7206, #7306, #7670, #7672, #8468)
 //  2025-02-18: Added ImGuiMouseCursor_Wait and ImGuiMouseCursor_Progress mouse cursor support.
-//  2024-07-08: Inputs: Fixed ImGuiMod_Super being mapped to VK_APPS instead of VK_LWIN||VK_RWIN. (#7768)
 //  2023-10-05: Inputs: Added support for extra ImGuiKey values: F13 to F24 function keys, app back/forward keys.
 //  2023-09-25: Inputs: Synthesize key-down event on key-up for VK_SNAPSHOT / ImGuiKey_PrintScreen as Windows doesn't emit it (same behavior as GLFW/SDL).
 //  2023-09-07: Inputs: Added support for keyboard codepage conversion for when application is compiled in MBCS mode and using a non-Unicode window.
@@ -122,6 +121,12 @@ struct ImGui_ImplWin32_Data
     INT64                       TicksPerSecond;
     ImGuiMouseCursor            LastMouseCursor;
     UINT32                      KeyboardCodePage;
+    bool                        LeftCtrlDown;
+    bool                        RightCtrlDown;
+    bool                        LeftShiftDown;
+    bool                        RightShiftDown;
+    bool                        LeftAltDown;
+    bool                        RightAltDown;
 
 #ifndef IMGUI_IMPL_WIN32_DISABLE_GAMEPAD
     bool                        HasGamepad;
@@ -277,11 +282,6 @@ static bool ImGui_ImplWin32_UpdateMouseCursor(ImGuiIO& io, ImGuiMouseCursor imgu
     return true;
 }
 
-static bool IsVkDown(int vk)
-{
-    return (::GetKeyState(vk) & 0x8000) != 0;
-}
-
 static void ImGui_ImplWin32_AddKeyEvent(ImGuiIO& io, ImGuiKey key, bool down, int native_keycode, int native_scancode = -1)
 {
     io.AddKeyEvent(key, down);
@@ -289,27 +289,22 @@ static void ImGui_ImplWin32_AddKeyEvent(ImGuiIO& io, ImGuiKey key, bool down, in
     IM_UNUSED(native_scancode);
 }
 
-static void ImGui_ImplWin32_ProcessKeyEventsWorkarounds(ImGuiIO& io)
+static void ImGui_ImplWin32_UpdateKeyModifiers(ImGuiIO& io, ImGui_ImplWin32_Data& bd, ImGuiKey key, bool down)
 {
-    // Left & right Shift keys: when both are pressed together, Windows tend to not generate the WM_KEYUP event for the first released one.
-    if (ImGui::IsKeyDown(ImGuiKey_LeftShift) && !IsVkDown(VK_LSHIFT))
-        ImGui_ImplWin32_AddKeyEvent(io, ImGuiKey_LeftShift, false, VK_LSHIFT);
-    if (ImGui::IsKeyDown(ImGuiKey_RightShift) && !IsVkDown(VK_RSHIFT))
-        ImGui_ImplWin32_AddKeyEvent(io, ImGuiKey_RightShift, false, VK_RSHIFT);
+    switch (key)
+    {
+    case ImGuiKey_LeftCtrl:   bd.LeftCtrlDown = down; break;
+    case ImGuiKey_RightCtrl:  bd.RightCtrlDown = down; break;
+    case ImGuiKey_LeftShift:  bd.LeftShiftDown = down; break;
+    case ImGuiKey_RightShift: bd.RightShiftDown = down; break;
+    case ImGuiKey_LeftAlt:    bd.LeftAltDown = down; break;
+    case ImGuiKey_RightAlt:   bd.RightAltDown = down; break;
+    default: return;
+    }
 
-    // Sometimes WM_KEYUP for Win key is not passed down to the app (e.g. for Win+V on some setups, according to GLFW).
-    if (ImGui::IsKeyDown(ImGuiKey_LeftSuper) && !IsVkDown(VK_LWIN))
-        ImGui_ImplWin32_AddKeyEvent(io, ImGuiKey_LeftSuper, false, VK_LWIN);
-    if (ImGui::IsKeyDown(ImGuiKey_RightSuper) && !IsVkDown(VK_RWIN))
-        ImGui_ImplWin32_AddKeyEvent(io, ImGuiKey_RightSuper, false, VK_RWIN);
-}
-
-static void ImGui_ImplWin32_UpdateKeyModifiers(ImGuiIO& io)
-{
-    io.AddKeyEvent(ImGuiMod_Ctrl, IsVkDown(VK_CONTROL));
-    io.AddKeyEvent(ImGuiMod_Shift, IsVkDown(VK_SHIFT));
-    io.AddKeyEvent(ImGuiMod_Alt, IsVkDown(VK_MENU));
-    io.AddKeyEvent(ImGuiMod_Super, IsVkDown(VK_LWIN) || IsVkDown(VK_RWIN));
+    io.AddKeyEvent(ImGuiMod_Ctrl, bd.LeftCtrlDown || bd.RightCtrlDown);
+    io.AddKeyEvent(ImGuiMod_Shift, bd.LeftShiftDown || bd.RightShiftDown);
+    io.AddKeyEvent(ImGuiMod_Alt, bd.LeftAltDown || bd.RightAltDown);
 }
 
 static void ImGui_ImplWin32_UpdateMouseData(ImGuiIO& io)
@@ -419,9 +414,6 @@ void    ImGui_ImplWin32_NewFrame()
     // Update OS mouse position
     ImGui_ImplWin32_UpdateMouseData(io);
 
-    // Process workarounds for known Windows key handling issues
-    ImGui_ImplWin32_ProcessKeyEventsWorkarounds(io);
-
     // Update OS mouse cursor with the cursor requested by imgui
     ImGuiMouseCursor mouse_cursor = io.MouseDrawCursor ? ImGuiMouseCursor_None : ImGui::GetMouseCursor();
     if (bd->LastMouseCursor != mouse_cursor)
@@ -496,11 +488,9 @@ ImGuiKey ImGui_ImplWin32_KeyEventToImGuiKey(WPARAM wParam, LPARAM lParam)
         case VK_LSHIFT: return ImGuiKey_LeftShift;
         case VK_LCONTROL: return ImGuiKey_LeftCtrl;
         case VK_LMENU: return ImGuiKey_LeftAlt;
-        case VK_LWIN: return ImGuiKey_LeftSuper;
         case VK_RSHIFT: return ImGuiKey_RightShift;
         case VK_RCONTROL: return ImGuiKey_RightCtrl;
         case VK_RMENU: return ImGuiKey_RightAlt;
-        case VK_RWIN: return ImGuiKey_RightSuper;
         case VK_APPS: return ImGuiKey_Menu;
         case '0': return ImGuiKey_0;
         case '1': return ImGuiKey_1;
@@ -738,13 +728,19 @@ IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandlerEx(HWND hwnd, UINT msg, WPA
         const bool is_key_down = (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN);
         if (wParam < 256)
         {
-            // Submit modifiers
-            ImGui_ImplWin32_UpdateKeyModifiers(io);
-
             // Obtain virtual key code and convert to ImGuiKey
-            const ImGuiKey key = ImGui_ImplWin32_KeyEventToImGuiKey(wParam, lParam);
             const int vk = (int)wParam;
             const int scancode = (int)LOBYTE(HIWORD(lParam));
+            const bool is_extended_key = (HIWORD(lParam) & KF_EXTENDED) != 0;
+            ImGuiKey key = ImGui_ImplWin32_KeyEventToImGuiKey(wParam, lParam);
+
+            // Resolve generic modifier messages without polling global keyboard state.
+            if (vk == VK_SHIFT)
+                key = (scancode == 0x36) ? ImGuiKey_RightShift : ImGuiKey_LeftShift;
+            else if (vk == VK_CONTROL)
+                key = is_extended_key ? ImGuiKey_RightCtrl : ImGuiKey_LeftCtrl;
+            else if (vk == VK_MENU)
+                key = is_extended_key ? ImGuiKey_RightAlt : ImGuiKey_LeftAlt;
 
             // Special behavior for VK_SNAPSHOT / ImGuiKey_PrintScreen as Windows doesn't emit the key down event.
             if (key == ImGuiKey_PrintScreen && !is_key_down)
@@ -752,30 +748,21 @@ IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandlerEx(HWND hwnd, UINT msg, WPA
 
             // Submit key event
             if (key != ImGuiKey_None)
+            {
                 ImGui_ImplWin32_AddKeyEvent(io, key, is_key_down, vk, scancode);
-
-            // Submit individual left/right modifier events
-            if (vk == VK_SHIFT)
-            {
-                // Important: Shift keys tend to get stuck when pressed together, missing key-up events are corrected in ImGui_ImplWin32_ProcessKeyEventsWorkarounds()
-                if (IsVkDown(VK_LSHIFT) == is_key_down) { ImGui_ImplWin32_AddKeyEvent(io, ImGuiKey_LeftShift, is_key_down, VK_LSHIFT, scancode); }
-                if (IsVkDown(VK_RSHIFT) == is_key_down) { ImGui_ImplWin32_AddKeyEvent(io, ImGuiKey_RightShift, is_key_down, VK_RSHIFT, scancode); }
-            }
-            else if (vk == VK_CONTROL)
-            {
-                if (IsVkDown(VK_LCONTROL) == is_key_down) { ImGui_ImplWin32_AddKeyEvent(io, ImGuiKey_LeftCtrl, is_key_down, VK_LCONTROL, scancode); }
-                if (IsVkDown(VK_RCONTROL) == is_key_down) { ImGui_ImplWin32_AddKeyEvent(io, ImGuiKey_RightCtrl, is_key_down, VK_RCONTROL, scancode); }
-            }
-            else if (vk == VK_MENU)
-            {
-                if (IsVkDown(VK_LMENU) == is_key_down) { ImGui_ImplWin32_AddKeyEvent(io, ImGuiKey_LeftAlt, is_key_down, VK_LMENU, scancode); }
-                if (IsVkDown(VK_RMENU) == is_key_down) { ImGui_ImplWin32_AddKeyEvent(io, ImGuiKey_RightAlt, is_key_down, VK_RMENU, scancode); }
+                ImGui_ImplWin32_UpdateKeyModifiers(io, *bd, key, is_key_down);
             }
         }
         return 0;
     }
     case WM_SETFOCUS:
     case WM_KILLFOCUS:
+        if (msg == WM_KILLFOCUS)
+        {
+            bd->LeftCtrlDown = bd->RightCtrlDown = false;
+            bd->LeftShiftDown = bd->RightShiftDown = false;
+            bd->LeftAltDown = bd->RightAltDown = false;
+        }
         io.AddFocusEvent(msg == WM_SETFOCUS);
 #ifndef IMGUI_IMPL_WIN32_DISABLE_GAMEPAD
         bd->XInputPacketNumber = 0; // FIXME: Technically, calling io.ClearInputKeys() directly would require this as well.
